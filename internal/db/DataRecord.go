@@ -1,0 +1,32 @@
+package db
+
+import (
+	"github.com/lishimeng/app-starter"
+)
+
+type RouteCategory int
+
+type DataRecordState int
+
+const (
+	In  RouteCategory = 1
+	Out RouteCategory = 2
+)
+
+const (
+	Init       DataRecordState = 1
+	Processing DataRecordState = 2
+	Success    DataRecordState = 3
+	Failure    DataRecordState = 99
+)
+
+type DataRecord struct {
+	app.Pk
+	Code       string        `orm:"column(code);unique"`
+	ReferCode  string        `orm:"column(refer_code)"`  // 关联的编号
+	Source     string        `orm:"column(source)"`      // 端口(来源/目的地)
+	Route      RouteCategory `orm:"column(route)"`       // 路由类型(到达/发出)
+	Payload    string        `orm:"column(payload)"`     // 通信内容
+	BizPayload string        `orm:"column(biz_payload)"` // 业务数据原文
+	app.TableChangeInfo
+}
