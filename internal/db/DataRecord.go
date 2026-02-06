@@ -9,8 +9,8 @@ type RouteCategory int
 type DataRecordState int
 
 const (
-	In  RouteCategory = 1
-	Out RouteCategory = 2
+	Subscriber RouteCategory = 1
+	Publish    RouteCategory = 2
 )
 
 const (

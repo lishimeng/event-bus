@@ -16,7 +16,7 @@ type Channel struct {
 	Route  string // 路由(目的地)不支持二级路由
 	UseTls bool   // 加密开关(不加密时message的payload与biz_payload相同)
 	Cipher ChannelCipher
-	s      *session.S
+	s      *session.S // publish通道复用session
 }
 
 func (ch *Channel) GetSession() *session.S {
@@ -46,7 +46,7 @@ func LoadChannel(config db.ChannelConfig) (err error) {
 	ch.Route = config.Router
 	if config.UseSecurity == 1 {
 		ch.UseTls = true
-		ch.Cipher, err = resolveChSecret(config.Security)
+		ch.Cipher, err = resolveChSecret(config.Security, config.Category)
 		if err != nil {
 			return
 		}
@@ -77,18 +77,30 @@ func createSession(pubKey *rsa.PublicKey) (s *session.S, err error) {
 	return
 }
 
-func resolveChSecret(s string) (c ChannelCipher, err error) {
+func resolveChSecret(s string, category db.RouteCategory) (c ChannelCipher, err error) {
 	var chSecret db.ChannelSecurity
 	err = json.Unmarshal([]byte(s), &chSecret)
 	if err != nil {
 		return
 	}
 
-	pubKey, err := cypher.LoadPublicKey([]byte(chSecret.RsaPem))
-	if err != nil {
-		return
+	var pubKey *rsa.PublicKey
+	var priKey *rsa.PrivateKey
+	if category == db.Subscriber {
+		pubKey, err = cypher.LoadPublicKey([]byte(chSecret.RsaPem))
+		if err != nil {
+			return
+		}
+		c.RsaPubKey = pubKey // 通道中只加载公钥
 	}
-	c.RsaPubKey = pubKey // 通道中只加载公钥
+	if category == db.Publish {
+		priKey, err = cypher.LoadPrivateKey([]byte(chSecret.RsaPem))
+		if err != nil {
+			return
+		}
+		c.RsaPriKey = priKey
+	}
+
 	return
 }
 
