@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 
 	"gitee.com/lishimeng/event-bus/cmd/server/proc"
+	"gitee.com/lishimeng/event-bus/internal/channel"
 	"gitee.com/lishimeng/event-bus/internal/db"
 	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
 	"github.com/lishimeng/app-starter"
@@ -40,7 +41,7 @@ func loadChannels(_ context.Context) (err error) {
 	}
 	log.Info("load channels %d", len(list))
 	for _, item := range list {
-		err = proc.LoadChannel(item)
+		err = channel.LoadChannel(item)
 		if err != nil {
 			log.Info("load channel fail, %s[%s]", item.Code, item.Name)
 			return

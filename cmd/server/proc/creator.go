@@ -3,6 +3,8 @@ package proc
 import (
 	"encoding/json"
 
+	"gitee.com/lishimeng/event-bus/internal/channel"
+	"gitee.com/lishimeng/event-bus/internal/message"
 	"gitee.com/lishimeng/event-bus/internal/tls/session"
 	"github.com/lishimeng/go-log"
 )
@@ -26,14 +28,7 @@ var WithParentId = func(id string) MessageCreateFunc {
 	}
 }
 
-type Message struct {
-	RequestId string          `json:"requestId,omitempty"`
-	ReferId   string          `json:"referId,omitempty"`
-	Route     string          `json:"route,omitempty"`
-	Payload   session.Payload `json:"payload"`
-}
-
-func Create(destination string, payload any, opts ...MessageCreateFunc) (m Message, err error) {
+func Create(destination string, payload any, opts ...MessageCreateFunc) (m message.Message, err error) {
 	// 消息创建业务
 	var p session.Payload
 	var opt MessageCreateOpt
@@ -55,7 +50,7 @@ func Create(destination string, payload any, opts ...MessageCreateFunc) (m Messa
 		return
 	}
 	// get destination
-	ch, err := GetChannel(destination)
+	ch, err := channel.GetChannel(destination)
 	if err != nil {
 		log.Info("not found channel[%s]", destination)
 		return

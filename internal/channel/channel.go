@@ -1,4 +1,4 @@
-package proc
+package channel
 
 import (
 	"crypto/rsa"
@@ -6,44 +6,22 @@ import (
 	"errors"
 
 	"gitee.com/lishimeng/event-bus/internal/db"
+	"gitee.com/lishimeng/event-bus/internal/message"
 	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
-	"gitee.com/lishimeng/event-bus/internal/tls/session"
 )
 
-type Channel struct {
-	Code   string // 编号
-	Name   string // 名称
-	Route  string // 路由(目的地)不支持二级路由
-	UseTls bool   // 加密开关(不加密时message的payload与biz_payload相同)
-	Cipher ChannelCipher
-	s      *session.S // publish通道复用session
-}
-
-func (ch *Channel) GetSession() *session.S {
-	return ch.s
-}
-
-func (ch *Channel) RefreshSession() (err error) {
-
-	s, err := createSession(ch.Cipher.RsaPubKey)
-	if err != nil {
-		return
-	}
-	ch.s = s
-	return
-}
-
-var channels map[string]Channel // route:channel
+var channels map[string]message.Channel // route:channel
 
 func init() {
-	channels = make(map[string]Channel)
+	channels = make(map[string]message.Channel)
 }
 
 func LoadChannel(config db.ChannelConfig) (err error) {
-	var ch Channel
+	var ch message.Channel
 	ch.Code = config.Code
 	ch.Name = config.Name
 	ch.Route = config.Router
+	ch.Callback = config.Callback
 	if config.UseSecurity == 1 {
 		ch.UseTls = true
 		ch.Cipher, err = resolveChSecret(config.Security, config.Category)
@@ -60,24 +38,7 @@ func LoadChannel(config db.ChannelConfig) (err error) {
 	return
 }
 
-func createSession(pubKey *rsa.PublicKey) (s *session.S, err error) {
-	aesKey, err := session.GenAesKey()
-	if err != nil {
-		return
-	}
-	cipheredAesKey, err := cypher.Encrypt(aesKey, pubKey)
-	if err != nil {
-		return
-	}
-	sessionIns, err := session.GenSession(aesKey, cipheredAesKey)
-	if err != nil {
-		return
-	}
-	s = &sessionIns
-	return
-}
-
-func resolveChSecret(s string, category db.RouteCategory) (c ChannelCipher, err error) {
+func resolveChSecret(s string, category db.RouteCategory) (c message.ChannelCipher, err error) {
 	var chSecret db.ChannelSecurity
 	err = json.Unmarshal([]byte(s), &chSecret)
 	if err != nil {
@@ -105,7 +66,7 @@ func resolveChSecret(s string, category db.RouteCategory) (c ChannelCipher, err 
 }
 
 // GetChannel 查询支持的通道
-func GetChannel(name string) (ch Channel, err error) {
+func GetChannel(name string) (ch message.Channel, err error) {
 	ch, ok := channels[name]
 	if !ok {
 		err = errors.New("channel not found")

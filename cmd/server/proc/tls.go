@@ -1,13 +1,8 @@
 package proc
 
-import "crypto/rsa"
-
-type ChannelCipher struct {
-	RsaPubKey *rsa.PublicKey
-	RsaPriKey *rsa.PrivateKey
-}
+import "gitee.com/lishimeng/event-bus/internal/message"
 
 var UserLocalCipher = false
 
 // LocalCipher 本地密钥
-var LocalCipher ChannelCipher
+var LocalCipher message.ChannelCipher
