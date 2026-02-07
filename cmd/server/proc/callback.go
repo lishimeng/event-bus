@@ -4,12 +4,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
+	"gitee.com/lishimeng/event-bus/internal/message"
 	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
 	"gitee.com/lishimeng/event-bus/internal/tls/session"
 	"github.com/lishimeng/go-log"
 )
 
-func Callback(m Message) (err error) {
+func Callback(m message.Message) (err error) {
 	// 回调业务
 	log.Info("callback message")
 	bs, _ := json.Marshal(m)

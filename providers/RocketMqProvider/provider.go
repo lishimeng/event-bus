@@ -9,8 +9,8 @@ type RocketMqProvider struct {
 func (p *RocketMqProvider) Init(b provider.BaseProvider) {
 	p.BaseProvider = b
 
-	p.AddHandler(provider.DataRecordMsgHandler)
-	p.AddHandler(provider.ChannelChkHandler)
-	p.AddHandler(provider.TlsDecryptHandler)
-	p.AddHandler(msgExecHandler)
+	p.AddHandler(provider.DataRecordMsgHandler) // 记录接收
+	p.AddHandler(provider.ChannelChkHandler)    // 检查通道支持
+	p.AddHandler(provider.TlsDecryptHandler)    // 解密数据
+	p.AddHandler(msgExecHandler)                // 回调
 }

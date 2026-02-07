@@ -3,15 +3,17 @@ package message
 import (
 	"crypto/rsa"
 
+	"gitee.com/lishimeng/event-bus/internal/db"
 	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
 	"gitee.com/lishimeng/event-bus/internal/tls/session"
 )
 
 type Channel struct {
-	Code     string // 编号
-	Name     string // 名称
-	Route    string // 路由(目的地)不支持二级路由
-	UseTls   bool   // 加密开关(不加密时message的payload与biz_payload相同)
+	Code     string           // 编号
+	Name     string           // 名称
+	Category db.RouteCategory // 路径类型
+	Route    string           // 路由(目的地)不支持二级路由
+	UseTls   bool             // 加密开关(不加密时message的payload与biz_payload相同)
 	Cipher   ChannelCipher
 	Callback string     // callback uri
 	s        *session.S // publish通道复用session

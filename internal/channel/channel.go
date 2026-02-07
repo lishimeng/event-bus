@@ -20,6 +20,7 @@ func LoadChannel(config db.ChannelConfig) (err error) {
 	var ch message.Channel
 	ch.Code = config.Code
 	ch.Name = config.Name
+	ch.Category = config.Category
 	ch.Route = config.Router
 	ch.Callback = config.Callback
 	if config.UseSecurity == 1 {

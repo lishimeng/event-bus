@@ -3,9 +3,12 @@ package provider
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"time"
 
 	"gitee.com/lishimeng/event-bus/internal/channel"
+	"gitee.com/lishimeng/event-bus/internal/db"
 	"gitee.com/lishimeng/event-bus/internal/message"
 	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
 	"gitee.com/lishimeng/event-bus/internal/tls/session"
@@ -18,8 +21,12 @@ const (
 )
 
 var ChannelChkHandler MessageHandler = func(msg message.Message, ctx map[string]any) (err error) {
-	_, err = channel.GetChannel(msg.Route)
+	ch, err := channel.GetChannel(msg.Route)
 	if err != nil {
+		return
+	}
+	if ch.Category != db.Subscriber {
+		err = errors.New(fmt.Sprintf("[subscriber:%s]channel doesn't exist", msg.Route))
 		return
 	}
 	return
