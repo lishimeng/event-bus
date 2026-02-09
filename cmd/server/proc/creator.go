@@ -1,11 +1,8 @@
 package proc
 
 import (
-	"encoding/json"
-
 	"gitee.com/lishimeng/event-bus/internal/channel"
 	"gitee.com/lishimeng/event-bus/internal/message"
-	"gitee.com/lishimeng/event-bus/internal/tls/session"
 	"github.com/lishimeng/go-log"
 )
 
@@ -28,9 +25,8 @@ var WithParentId = func(id string) MessageCreateFunc {
 	}
 }
 
-func Create(destination string, payload any, opts ...MessageCreateFunc) (m message.Message, err error) {
+func Create(destination string, biz message.BizMessage, opts ...MessageCreateFunc) (m message.Message, err error) {
 	// 消息创建业务
-	var p session.Payload
 	var opt MessageCreateOpt
 	for _, o := range opts {
 		o(&opt)
@@ -42,13 +38,6 @@ func Create(destination string, payload any, opts ...MessageCreateFunc) (m messa
 		// TODO gen id
 	}
 
-	var nonce []byte
-	var ciphertext []byte
-
-	bs, err := json.Marshal(payload)
-	if err != nil {
-		return
-	}
 	// get destination
 	ch, err := channel.GetChannel(destination)
 	if err != nil {
@@ -56,20 +45,12 @@ func Create(destination string, payload any, opts ...MessageCreateFunc) (m messa
 		return
 	}
 
-	if ch.UseTls {
-		var s = ch.GetSession()
-		log.Info("use tls")
-		ciphertext, nonce, err = s.Encrypt(bs)
-		if err != nil {
-			log.Info("encrypt fail")
-			log.Info(err)
-			return
-		}
-		p = s.GenData(s.AesKey, nonce, ciphertext)
-	} else {
-		p.Data = string(bs)
+	m.Payload, err = message.Encrypt(biz, ch)
+	if err != nil {
+		log.Info("encrypt fail")
+		log.Info(err)
+		return
 	}
 
-	m.Payload = p
 	return
 }
