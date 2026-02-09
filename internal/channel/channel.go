@@ -8,6 +8,7 @@ import (
 	"gitee.com/lishimeng/event-bus/internal/db"
 	"gitee.com/lishimeng/event-bus/internal/message"
 	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
+	"github.com/lishimeng/go-log"
 )
 
 var channels map[string]message.Channel // route:channel
@@ -35,7 +36,21 @@ func LoadChannel(config db.ChannelConfig) (err error) {
 		}
 	}
 
+	// 全局通道
 	channels[ch.Route] = ch
+	log.Info("load channel success. %s[%s]->%s:category:%d", ch.Code, ch.Name, ch.Route, ch.Category)
+
+	// 分组通道
+	switch ch.Category {
+	case db.Publish:
+		log.Info("publish channel register")
+		publishers[ch.Route] = ch
+	case db.Subscriber:
+		log.Info("subscriber channel register")
+		subscribers[ch.Route] = ch
+	default:
+		log.Info("not support channel type, %d", ch.Category)
+	}
 	return
 }
 
@@ -66,7 +81,7 @@ func resolveChSecret(s string, category db.RouteCategory) (c message.ChannelCiph
 	return
 }
 
-// GetChannel 查询支持的通道
+// GetChannel 查询支持的通道(全局通道)
 func GetChannel(name string) (ch message.Channel, err error) {
 	ch, ok := channels[name]
 	if !ok {

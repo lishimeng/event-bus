@@ -10,7 +10,11 @@ type Provider interface {
 	Publish(m message.Message)
 	Subscribe(ch message.Channel)
 }
+
+// RespListener 回调结果
 type RespListener func(m message.Message)
+
+// CallbackListener 回调
 type CallbackListener func(biz message.BizMessage) (resp map[string]any, err error)
 type BaseProvider struct {
 	msgListener CallbackListener

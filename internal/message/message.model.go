@@ -9,6 +9,13 @@ type Message struct {
 	Payload   session.Payload `json:"payload"`
 }
 
+func (m *Message) Decrypt(ch Channel) (biz BizMessage, err error) {
+	if ch.UseTls {
+		
+	}
+	return
+}
+
 type BizMessage struct {
 	Action  string            `json:"action,omitempty"`
 	Method  string            `json:"method,omitempty"`
