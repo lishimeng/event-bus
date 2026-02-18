@@ -9,7 +9,7 @@ import (
 	"github.com/lishimeng/go-log"
 )
 
-const publishPath = "/api/v1/message/publish" // 默认位置
+const publishPath = "/api/v1/communication/publish" // 默认位置
 
 type Resp struct {
 	Code int    `json:"code"`
