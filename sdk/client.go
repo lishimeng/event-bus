@@ -20,8 +20,8 @@ type Client struct {
 	Host string // server host
 }
 
-func (m *Client) genUrl(path string) string {
-	dest, err := url.JoinPath(m.Host, path)
+func (c *Client) genUrl(path string) string {
+	dest, err := url.JoinPath(c.Host, path)
 	if err != nil {
 		return ""
 	}
