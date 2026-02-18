@@ -2,6 +2,7 @@ package proc
 
 import (
 	"gitee.com/lishimeng/event-bus/internal/channel"
+	"gitee.com/lishimeng/event-bus/internal/id"
 	"gitee.com/lishimeng/event-bus/internal/message"
 	"github.com/lishimeng/go-log"
 )
@@ -35,11 +36,11 @@ func Create(destination string, biz message.BizMessage, opts ...MessageCreateFun
 	m.ReferId = opt.ParentId
 	m.Route = destination
 	if len(m.RequestId) == 0 {
-		// TODO gen id
+		m.RequestId = id.GenId() // 默认id策略
 	}
 
 	// get destination
-	ch, err := channel.GetChannel(destination)
+	ch, err := channel.GetSubscriber(destination)
 	if err != nil {
 		log.Info("not found channel[%s]", destination)
 		return
