@@ -4,6 +4,7 @@ import (
 	"gitee.com/lishimeng/event-bus/internal/db"
 	"gitee.com/lishimeng/event-bus/internal/message"
 	"gitee.com/lishimeng/event-bus/internal/provider"
+	"github.com/lishimeng/go-log"
 )
 
 type RocketMqProvider struct {
@@ -35,6 +36,13 @@ func (p *RocketMqProvider) Init(b provider.BaseProvider) {
 
 func (p *RocketMqProvider) Publish(m message.Message) {
 
+	err := p.BaseProvider.PrePublish(m)
+	if err != nil {
+		log.Info("pre publish fail")
+		return
+	}
+
+	// TODO publish
 }
 
 func (p *RocketMqProvider) Subscribe(ch message.Channel) {
