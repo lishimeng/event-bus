@@ -11,6 +11,11 @@ import (
 
 const publishPath = "/api/v1/communication/publish" // 默认位置
 
+type Request struct {
+	Payload string `json:"payload,omitempty"`
+	Route   string `json:"route,omitempty"`
+}
+
 type Resp struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`

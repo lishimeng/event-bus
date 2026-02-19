@@ -9,8 +9,8 @@ type RouteCategory int
 type DataRecordState int
 
 const (
-	Subscriber RouteCategory = 1
-	Publish    RouteCategory = 2
+	Subscriber RouteCategory = 1 // 自己的接收通道
+	Publish    RouteCategory = 2 // 发布到第三方系统的通道
 )
 
 const (

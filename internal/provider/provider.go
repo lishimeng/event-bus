@@ -17,12 +17,16 @@ type RespListener func(m message.Message)
 // CallbackListener 回调
 type CallbackListener func(biz message.BizMessage) (resp map[string]any, err error)
 type BaseProvider struct {
-	msgListener CallbackListener
-	handlers    []MessageHandler
+	msgListener    CallbackListener
+	decodeHandlers []MessageHandler
+	encodeHandlers []MessageHandler
 }
 
-func (b *BaseProvider) AddHandler(handler MessageHandler) {
-	b.handlers = append(b.handlers, handler)
+func (b *BaseProvider) AddDecodeHandler(handler MessageHandler) {
+	b.decodeHandlers = append(b.decodeHandlers, handler)
+}
+func (b *BaseProvider) AddEncodeHandler(handler MessageHandler) {
+	b.encodeHandlers = append(b.decodeHandlers, handler)
 }
 
 func (b *BaseProvider) SetMsgListener(listener CallbackListener) {
@@ -32,11 +36,23 @@ func (b *BaseProvider) SetRespListener(listener CallbackListener) {
 	b.msgListener = listener
 }
 
+func (b *BaseProvider) PrePublish(m message.Message) (err error) {
+	log.Info("pre publish[encode]")
+	ctx := make(map[string]any)
+	for _, handler := range b.encodeHandlers {
+		err = handler(m, ctx)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
 func (b *BaseProvider) OnMessage(m message.Message) {
 	log.Info("OnMessage: %s[%s]<-%s", m.RequestId, m.ReferId, m.Route)
 	var err error
 	ctx := make(map[string]any)
-	for _, handler := range b.handlers {
+	for _, handler := range b.decodeHandlers {
 		err = handler(m, ctx)
 		if err != nil {
 			break
