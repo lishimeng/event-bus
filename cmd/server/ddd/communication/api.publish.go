@@ -26,5 +26,6 @@ func apiPublish(ctx server.Context) {
 		return
 	}
 	var msg message.Message
-	proc.Publish()
+	// TODO
+	proc.Publish(msg)
 }

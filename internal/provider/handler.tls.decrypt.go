@@ -7,7 +7,7 @@ import (
 )
 
 // TlsDecryptHandler 解密
-var TlsDecryptHandler MessageHandler = func(msg message.Message, ctx map[string]any) (err error) {
+var TlsDecryptHandler MessageHandler = func(msg *message.Message, ctx map[string]any) (err error) {
 	ch, err := channel.GetChannel(msg.Route)
 	if err != nil {
 		return
@@ -19,5 +19,6 @@ var TlsDecryptHandler MessageHandler = func(msg message.Message, ctx map[string]
 		return
 	}
 	ctx["biz"] = biz
+	msg.Biz = biz
 	return
 }

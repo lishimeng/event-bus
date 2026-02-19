@@ -39,6 +39,8 @@ func (p *RocketMqProvider) Publish(m message.Message) {
 
 func (p *RocketMqProvider) Subscribe(ch message.Channel) {
 
+	var m message.Message // TODO
+	p.onMessage(m)
 }
 
 func (p *RocketMqProvider) onMessage(m message.Message) {

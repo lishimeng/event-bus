@@ -10,7 +10,7 @@ import (
 )
 
 var ChannelChkHandler = func(category db.RouteCategory) MessageHandler {
-	return func(msg message.Message, ctx map[string]any) (err error) {
+	return func(msg *message.Message, ctx map[string]any) (err error) {
 		ch, err := channel.GetChannel(msg.Route)
 		if err != nil {
 			return

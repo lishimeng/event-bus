@@ -8,7 +8,7 @@ import (
 	"github.com/lishimeng/go-log"
 )
 
-var msgExecHandler = func(msg message.Message, ctx map[string]any) (err error) {
+var msgExecHandler = func(msg *message.Message, ctx map[string]any) (err error) {
 	biz, ok := ctx["biz"]
 	if !ok {
 		err = errors.New("biz not exist")
