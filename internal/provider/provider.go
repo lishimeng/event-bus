@@ -49,7 +49,7 @@ func (b *BaseProvider) PrePublish(m message.Message) (err error) {
 }
 
 func (b *BaseProvider) OnMessage(m message.Message) {
-	log.Info("OnMessage: %s[%s]<-%s", m.RequestId, m.ReferId, m.Route)
+	log.Info("handleMessage: %s[%s]<-%s", m.RequestId, m.ReferId, m.Route)
 	var err error
 	ctx := make(map[string]any)
 	for _, handler := range b.decodeHandlers {

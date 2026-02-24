@@ -17,6 +17,7 @@ func (m *Message) Decrypt(ch Channel) (biz BizMessage, err error) {
 	return
 }
 
+// BizMessage 业务消息体
 type BizMessage struct {
 	Action  string            `json:"action,omitempty"`
 	Method  string            `json:"method,omitempty"`
