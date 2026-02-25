@@ -4,14 +4,20 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 
 	"gitee.com/lishimeng/event-bus/cmd/server/proc"
 	"gitee.com/lishimeng/event-bus/internal/channel"
 	"gitee.com/lishimeng/event-bus/internal/db"
 	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
+	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider"
+	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider/proxy"
 	"github.com/lishimeng/app-starter"
 	"github.com/lishimeng/go-log"
+	"github.com/lishimeng/x/container"
 )
+
+var sysConfigs map[string]db.SysConfig
 
 func AfterWeb(ctx context.Context) (err error) {
 
@@ -19,6 +25,14 @@ func AfterWeb(ctx context.Context) (err error) {
 }
 
 func BeforeWeb(ctx context.Context) (err error) {
+
+	sysConfigs = make(map[string]db.SysConfig)
+	sysConfigs, err = loadSysConfigs()
+	if err != nil {
+		return
+	}
+
+	err = initRmq(ctx) // 在channel加载之前
 
 	err = loadLocalSecret(ctx) // 加载本地密钥
 	if err != nil {
@@ -80,5 +94,59 @@ func loadLocalSecret(_ context.Context) (err error) {
 	} // 本地只需要私钥即可(加密操作)
 	proc.UserLocalCipher = true
 
+	return
+}
+
+func initRmq(ctx context.Context) (err error) {
+	log.Info("setup rmq")
+	var cfg RocketMqProvider.RmqConfig
+	err = getSysConfig(db.SysRmqConfig, &cfg)
+	if err != nil {
+		return
+	}
+	client := proxy.New(ctx,
+		proxy.WithEndpoint(cfg.Endpoint),
+		proxy.WithAuth(cfg.AppId, cfg.Secret),
+		proxy.WithPublisherConfigs(cfg.Publisher.MessageGroup, cfg.Publisher.Topics...),
+	)
+	container.Add(&client)
+
+	log.Info("setup rmq provider")
+	rmqProvider := RocketMqProvider.New(client, cfg)
+	container.Add(&rmqProvider)
+	engine := proc.NewEngine(rmqProvider)
+	proc.EngineInstance = engine // 初始化message engine
+	return
+}
+
+func getSysConfig(key string, ptr any) (err error) {
+	conf, ok := getCacheSysConfig(key)
+	if !ok {
+		err = errors.New("no rmq config")
+		return
+	}
+	bs, err := base64.StdEncoding.DecodeString(conf.Config)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(bs, ptr)
+	return
+}
+
+func getCacheSysConfig(name string) (conf db.SysConfig, exist bool) {
+	conf, exist = sysConfigs[name]
+	return
+}
+
+func loadSysConfigs() (configs map[string]db.SysConfig, err error) {
+	configs = map[string]db.SysConfig{}
+	var list []db.SysConfig
+	_, err = app.GetOrm().Context.QueryTable(new(db.SysConfig)).All(&list)
+	if err != nil {
+		return
+	}
+	for _, item := range list {
+		configs[item.Name] = item
+	}
 	return
 }

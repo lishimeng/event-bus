@@ -4,6 +4,7 @@ import "github.com/lishimeng/app-starter"
 
 const (
 	SysLocalSecret = "local_secret"
+	SysRmqConfig   = "rmq_config"
 )
 
 type SysConfig struct {

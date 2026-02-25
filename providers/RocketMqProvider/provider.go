@@ -1,19 +1,26 @@
 package RocketMqProvider
 
 import (
+	"encoding/json"
+
 	"gitee.com/lishimeng/event-bus/internal/db"
 	"gitee.com/lishimeng/event-bus/internal/message"
 	"gitee.com/lishimeng/event-bus/internal/provider"
+	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider/proxy"
+	rmq "github.com/apache/rocketmq-clients/golang/v5"
 	"github.com/lishimeng/go-log"
 )
 
 type RocketMqProvider struct {
 	provider.BaseProvider
+	client    *proxy.Client
+	rmqConfig RmqConfig
 }
 
-func New(base provider.BaseProvider) (p provider.Provider) {
+func New(client *proxy.Client, cfg RmqConfig) (p provider.Provider) {
 	h := &RocketMqProvider{
-		BaseProvider: base,
+		client:    client,
+		rmqConfig: cfg,
 	}
 	p = h
 	return
@@ -32,25 +39,43 @@ func (p *RocketMqProvider) Init(b provider.BaseProvider) {
 	p.AddEncodeHandler(provider.DataRecordMsgHandler)
 	p.AddEncodeHandler(provider.ChannelChkHandler(db.Publish))
 	p.AddEncodeHandler(provider.TlsEncryptHandler) // 加密
+	p.AddEncodeHandler(rmqMsgPubHandler)
 }
 
 func (p *RocketMqProvider) Publish(m message.Message) {
 
-	err := p.BaseProvider.PrePublish(m)
+	err := p.BaseProvider.PrePublish(&m)
 	if err != nil {
-		log.Info("pre publish fail")
+		log.Info("publish fail")
+		log.Info(err)
 		return
 	}
+	log.Info("publish success")
 
-	// TODO publish
 }
 
 func (p *RocketMqProvider) Subscribe(ch message.Channel) {
 
-	var m message.Message // TODO
-	p.onMessage(m)
+	topic := ch.Route
+	subCfg, err := p.rmqConfig.GetSubscriber(topic)
+	if err != nil {
+		log.Info("subscribe fail, topic not supported[%s]", topic)
+		log.Info(err)
+		return
+	}
+	p.client.Subscribe(subCfg.Topic, subCfg.ConsumerGroup, func(mv *rmq.MessageView) {
+		var m message.Message // TODO
+
+		err = json.Unmarshal(mv.GetBody(), &m)
+		if err != nil {
+			log.Info(err)
+			return
+		}
+		m.Route = mv.GetTopic() // 修正一次router,与rmq中一致
+		p.onMessage(m)
+	})
 }
 
 func (p *RocketMqProvider) onMessage(m message.Message) {
-	p.BaseProvider.OnMessage(m)
+	p.BaseProvider.OnMessage(&m)
 }
