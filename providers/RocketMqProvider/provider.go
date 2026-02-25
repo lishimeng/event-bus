@@ -6,6 +6,7 @@ import (
 	"gitee.com/lishimeng/event-bus/internal/db"
 	"gitee.com/lishimeng/event-bus/internal/message"
 	"gitee.com/lishimeng/event-bus/internal/provider"
+	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider/msgRecord"
 	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider/proxy"
 	rmq "github.com/apache/rocketmq-clients/golang/v5"
 	"github.com/lishimeng/go-log"
@@ -64,6 +65,7 @@ func (p *RocketMqProvider) Subscribe(ch message.Channel) {
 		return
 	}
 	p.client.Subscribe(subCfg.Topic, subCfg.ConsumerGroup, func(mv *rmq.MessageView) {
+		msgRecord.OnMessage(mv.GetMessageId(), mv.GetTopic(), string(mv.GetBody()))
 		var m message.Message // TODO
 
 		err = json.Unmarshal(mv.GetBody(), &m)

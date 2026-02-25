@@ -3,6 +3,7 @@ package proxy
 import (
 	"context"
 
+	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider/msgRecord"
 	rmq "github.com/apache/rocketmq-clients/golang/v5"
 	"github.com/apache/rocketmq-clients/golang/v5/credentials"
 	"github.com/lishimeng/go-log"
@@ -82,7 +83,9 @@ func (p *Publisher) work() {
 				log.Info(err)
 			}
 			for i := 0; i < len(resp); i++ {
-				log.Debug(">>> send message id: %s\n", resp[i].MessageID)
+				var r = resp[i]
+				log.Debug(">>> send message id: %s\n", r.MessageID)
+				msgRecord.OnMessage(r.MessageID, msg.Topic, string(msg.Body))
 			}
 		}
 	}
