@@ -35,24 +35,14 @@ type Subscriber struct {
 
 // 不间断运行, 监听ctx结束
 func (sub *Subscriber) runForever() {
-	var retry = 0
+	//var retry = 0
 	for {
 		select {
 		case <-sub.ctx.Done():
 			return
 		default:
-			consumer, err := sub.createConsumer()
-			if err == nil {
-				retry = 0
-				err = sub.runOnce(consumer)
-			}
-			if err != nil {
-				log.Info(err)
-				retry++
-				retry %= 30                                    // 最大停顿30s
-				time.Sleep(time.Second * time.Duration(retry)) // 出异常时停顿
-				// TODO 对接alarm
-			}
+			_, _ = sub.createConsumer()
+
 		}
 	}
 }
@@ -83,8 +73,8 @@ func (sub *Subscriber) runOnce(consumer rmq.SimpleConsumer) (err error) {
 	}
 }
 
-func (sub *Subscriber) createConsumer() (consumer rmq.SimpleConsumer, err error) {
-	consumer, err = rmq.NewSimpleConsumer(&rmq.Config{
+func (sub *Subscriber) createConsumer() (consumer rmq.PushConsumer, err error) {
+	consumer, err = rmq.NewPushConsumer(&rmq.Config{
 		Endpoint:      sub.conf.Host,
 		ConsumerGroup: sub.consumerGroup,
 		Credentials: &credentials.SessionCredentials{
@@ -93,10 +83,18 @@ func (sub *Subscriber) createConsumer() (consumer rmq.SimpleConsumer, err error)
 		},
 	},
 
-		rmq.WithSimpleAwaitDuration(awaitDuration),
-		rmq.WithSimpleSubscriptionExpressions(map[string]*rmq.FilterExpression{
+		rmq.WithPushAwaitDuration(awaitDuration),
+		rmq.WithPushSubscriptionExpressions(map[string]*rmq.FilterExpression{
 			sub.topic: rmq.SUB_ALL,
 		}),
+		rmq.WithPushMessageListener(&rmq.FuncMessageListener{
+			Consume: func(mv *rmq.MessageView) rmq.ConsumerResult {
+				sub.handleMessage(mv)
+				return rmq.SUCCESS
+			},
+		}),
+		rmq.WithPushConsumptionThreadCount(20),
+		rmq.WithPushMaxCacheMessageCount(1024),
 	)
 	if err != nil {
 		log.Info(err)
@@ -107,6 +105,7 @@ func (sub *Subscriber) createConsumer() (consumer rmq.SimpleConsumer, err error)
 		log.Info(err)
 		return
 	}
+	//err = consumer.Subscribe(sub.topic, rmq.SUB_ALL)
 	return
 }
 
