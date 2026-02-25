@@ -76,6 +76,11 @@ func (p *RocketMqProvider) Subscribe(ch message.Channel) {
 	})
 }
 
+func (p *RocketMqProvider) UnSubscribe(ch message.Channel) {
+	key := ch.Route
+	p.client.UnSubscribe(key)
+}
+
 func (p *RocketMqProvider) onMessage(m message.Message) {
 	p.BaseProvider.OnMessage(&m)
 }

@@ -6,9 +6,10 @@ import (
 )
 
 type Provider interface {
-	OnMessage(m *message.Message)
-	Publish(m message.Message)
-	Subscribe(ch message.Channel)
+	OnMessage(m *message.Message)   //
+	Publish(m message.Message)      // 发布
+	Subscribe(ch message.Channel)   // 订阅(一次性)
+	UnSubscribe(ch message.Channel) // 取消订阅(一次性)
 }
 
 // RespListener 回调结果
