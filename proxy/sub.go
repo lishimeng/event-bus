@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	rmq "github.com/apache/rocketmq-clients/golang/v5"
@@ -63,7 +62,7 @@ func (sub *Subscriber) runOnce(consumer rmq.SimpleConsumer) (err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println(r)
+			log.Info(r)
 		}
 		log.Info("stop receive message[%s<-(%s)]", sub.topic, sub.consumerGroup)
 		_ = consumer.GracefulStop()
@@ -118,32 +117,33 @@ func (sub *Subscriber) Subscribe() {
 }
 
 func (sub *Subscriber) workOnce(consumer rmq.SimpleConsumer) (err error) {
-	mvs, err := consumer.Receive(context.TODO(), 1, invisibleDuration) // 轮询方式
+	mvs, err := consumer.Receive(context.TODO(), maxMessageNum, invisibleDuration) // 轮询方式
 	if err != nil {
 		rpcStatus, ok := rmq.AsErrRpcStatus(err)
 		if ok {
 			if rpcStatus.Code == 40401 {
-				log.Info("%s", rpcStatus.Error())
+				log.Debug("%s", rpcStatus.Error())
 				err = nil
 				return
 			}
 		}
-		fmt.Println("receive message error: " + err.Error())
+		log.Info("receive message error: %s", err.Error())
 		return
 	}
 	// ack message
 	for _, mv := range mvs {
 		sub.handleMessage(mv)
 		if err = consumer.Ack(context.TODO(), mv); err != nil {
-			log.Info("ack message error: %s[%s]"+mv.GetMessageId(), err.Error())
+			log.Info("message ack error: %s[%s]"+mv.GetMessageId(), err.Error())
 		} else {
-			log.Info("ack message success: %s", mv.GetMessageId())
+			log.Info("message ack success: %s", mv.GetMessageId())
 		}
 	}
 	return
 }
 
 func (sub *Subscriber) handleMessage(mv *rmq.MessageView) {
+	log.Debug("<<< receive message: [%s]", mv.GetMessageId())
 	if sub.onMessage == nil {
 		return
 	}

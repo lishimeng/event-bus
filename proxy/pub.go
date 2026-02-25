@@ -82,14 +82,14 @@ func (p *Publisher) work() {
 				log.Info(err)
 			}
 			for i := 0; i < len(resp); i++ {
-				log.Info("send message id: %s\n", resp[i].MessageID)
+				log.Debug(">>> send message id: %s\n", resp[i].MessageID)
 			}
 		}
 	}
 }
 
 func (p *Publisher) Publish(topic string, payload []byte) {
-	log.Info("publish to topic:%s", topic)
+	log.Debug("publish to topic:%s", topic)
 	if !p.sendEnable {
 		return
 	}
@@ -99,6 +99,6 @@ func (p *Publisher) Publish(topic string, payload []byte) {
 	}
 	msg.SetMessageGroup(p.messageGroup)
 	p.msgBuf <- msg
-	log.Info("publish msg to buffer")
+	log.Debug("publish msg to buffer")
 	return
 }
