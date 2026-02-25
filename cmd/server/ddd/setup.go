@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 
 	"gitee.com/lishimeng/event-bus/cmd/server/proc"
 	"gitee.com/lishimeng/event-bus/internal/channel"
 	"gitee.com/lishimeng/event-bus/internal/db"
+	"gitee.com/lishimeng/event-bus/internal/domains/sysCfg"
 	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
 	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider"
 	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider/proxy"
@@ -17,8 +17,6 @@ import (
 	"github.com/lishimeng/x/container"
 )
 
-var sysConfigs map[string]db.SysConfig
-
 func AfterWeb(ctx context.Context) (err error) {
 
 	return
@@ -26,11 +24,7 @@ func AfterWeb(ctx context.Context) (err error) {
 
 func BeforeWeb(ctx context.Context) (err error) {
 
-	sysConfigs = make(map[string]db.SysConfig)
-	sysConfigs, err = loadSysConfigs()
-	if err != nil {
-		return
-	}
+	sysCfg.EnableCache()
 
 	err = initRmq(ctx) // 在channel加载之前
 
@@ -100,7 +94,7 @@ func loadLocalSecret(_ context.Context) (err error) {
 func initRmq(ctx context.Context) (err error) {
 	log.Info("setup rmq")
 	var cfg RocketMqProvider.RmqConfig
-	err = getSysConfig(db.SysRmqConfig, &cfg)
+	err = sysCfg.GetSysConfig(db.SysRmqConfig, &cfg)
 	if err != nil {
 		return
 	}
@@ -116,37 +110,5 @@ func initRmq(ctx context.Context) (err error) {
 	container.Add(&rmqProvider)
 	engine := proc.NewEngine(rmqProvider)
 	proc.EngineInstance = engine // 初始化message engine
-	return
-}
-
-func getSysConfig(key string, ptr any) (err error) {
-	conf, ok := getCacheSysConfig(key)
-	if !ok {
-		err = errors.New("no rmq config")
-		return
-	}
-	bs, err := base64.StdEncoding.DecodeString(conf.Config)
-	if err != nil {
-		return
-	}
-	err = json.Unmarshal(bs, ptr)
-	return
-}
-
-func getCacheSysConfig(name string) (conf db.SysConfig, exist bool) {
-	conf, exist = sysConfigs[name]
-	return
-}
-
-func loadSysConfigs() (configs map[string]db.SysConfig, err error) {
-	configs = map[string]db.SysConfig{}
-	var list []db.SysConfig
-	_, err = app.GetOrm().Context.QueryTable(new(db.SysConfig)).All(&list)
-	if err != nil {
-		return
-	}
-	for _, item := range list {
-		configs[item.Name] = item
-	}
 	return
 }
