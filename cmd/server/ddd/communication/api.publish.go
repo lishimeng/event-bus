@@ -1,6 +1,8 @@
 package communication
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"net/http"
 
 	"gitee.com/lishimeng/event-bus/cmd/server/proc"
@@ -25,7 +27,44 @@ func apiPublish(ctx server.Context) {
 		ctx.Json(resp)
 		return
 	}
-	var msg message.Message
-	// TODO
+
+	var biz message.BizMessage
+	if len(req.Payload) > 0 { // 覆盖biz字段
+		var bs []byte
+		bs, err = base64.StdEncoding.DecodeString(req.Payload)
+		if err != nil {
+			log.Info("base64 decode fail")
+			log.Info(err)
+			resp.Code = http.StatusBadRequest
+			resp.Msg = "base64 decode fail"
+			ctx.Json(resp)
+			return
+		}
+		err = json.Unmarshal(bs, &biz)
+		if err != nil {
+			log.Info("json unmarshal fail")
+			log.Info(err)
+			resp.Code = http.StatusBadRequest
+			resp.Msg = "json unmarshal fail"
+			ctx.Json(resp)
+			return
+		}
+	}
+	var opts []proc.MessageCreateFunc
+	if len(req.ReferId) > 0 {
+		opts = append(opts, proc.WithParentId(req.ReferId))
+	}
+	msg, err := proc.Create(req.Route, req.Biz, opts...)
+	if err != nil {
+		log.Info("create fail")
+		log.Info(err)
+		resp.Code = http.StatusInternalServerError
+		resp.Msg = "create fail"
+		ctx.Json(resp)
+		return
+	}
 	proc.Publish(msg)
+	resp.Code = http.StatusOK
+	resp.Msg = msg.RequestId
+	ctx.Json(resp)
 }

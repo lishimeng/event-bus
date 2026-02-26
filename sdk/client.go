@@ -11,9 +11,12 @@ import (
 
 const publishPath = "/api/v1/communication/publish" // 默认位置
 
+// Request Payload字段必须是message.BizMessage序列化后的格式, 并经过base64转码
 type Request struct {
-	Payload string `json:"payload,omitempty"`
-	Route   string `json:"route,omitempty"`
+	Payload string             `json:"payload,omitempty"` // 优先使用, 空白的时候从Biz里读数据
+	Biz     message.BizMessage `json:"biz,omitempty"`     // payload有值的时候不生效
+	Route   string             `json:"route,omitempty"`
+	ReferId string             `json:"referId,omitempty"` // 作为主动回复时可标记原message_id
 }
 
 type Resp struct {
