@@ -1,9 +1,10 @@
 package sdk
 
 import (
-	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/url"
+	"strings"
 
 	"gitee.com/lishimeng/event-bus/internal/message"
 	"github.com/lishimeng/go-log"
@@ -17,6 +18,21 @@ type Request struct {
 	Biz     message.BizMessage `json:"biz,omitempty"`     // payload有值的时候不生效
 	Route   string             `json:"route,omitempty"`
 	ReferId string             `json:"referId,omitempty"` // 作为主动回复时可标记原message_id
+}
+
+func (r *Request) WithReferId(id string) *Request {
+	r.ReferId = id
+	return r
+}
+
+func (r *Request) WithPayload(payload string) *Request {
+	r.Payload = payload
+	return r
+}
+
+func (r *Request) WithBiz(biz message.BizMessage) *Request {
+	r.Biz = biz
+	return r
 }
 
 type Resp struct {
@@ -36,19 +52,26 @@ func (c *Client) genUrl(path string) string {
 	return dest
 }
 
-func (c *Client) Publish(route string, msg message.BizMessage) (result Resp, err error) {
-	method := msg.Method
+func (c *Client) CreateRequest(route string) (r Request) {
+	r.Route = route
+	return
+}
+
+func (c *Client) Publish(msg Request) (result Resp, err error) {
+	method := msg.Biz.Method
 	log.Info("method:%v", method)
-	bs, err := json.Marshal(msg)
-	if err != nil {
+	method = strings.ToUpper(method)
+	switch method {
+	case "POST":
+	case "GET":
+	case "PUT":
+	case "DELETE":
+	default:
+		err = errors.New("invalid method")
 		return
 	}
-	payload := base64.StdEncoding.EncodeToString(bs)
 	u := c.genUrl(publishPath)
-	m := make(map[string]any)
-	m["payload"] = payload
-	m["route"] = route
-	resp, err := GetDefault().Post(u, m)
+	resp, err := GetDefault().Post(u, msg)
 	if err != nil {
 		return
 	}
