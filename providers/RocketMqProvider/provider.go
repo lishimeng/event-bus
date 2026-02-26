@@ -23,13 +23,12 @@ func New(client *proxy.Client, cfg RmqConfig) (p provider.Provider) {
 		client:    client,
 		rmqConfig: cfg,
 	}
+	h.Init()
 	p = h
 	return
 }
 
-func (p *RocketMqProvider) Init(b provider.BaseProvider) {
-	p.BaseProvider = b
-
+func (p *RocketMqProvider) Init() {
 	// ----------subscribe-----------------------------------------
 	p.AddDecodeHandler(provider.DataRecordMsgHandler)             // 记录接收
 	p.AddDecodeHandler(provider.ChannelChkHandler(db.Subscriber)) // 检查通道支持

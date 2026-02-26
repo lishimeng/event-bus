@@ -13,8 +13,12 @@ type MsgRecord struct {
 }
 
 var buffer chan MsgRecord
+var enable = false
 
 func OnMessage(rmqMsgId string, topic string, payload string) {
+	if !enable {
+		return
+	}
 	var r MsgRecord
 	r.Id = rmqMsgId
 	r.Topic = topic
@@ -24,6 +28,7 @@ func OnMessage(rmqMsgId string, topic string, payload string) {
 
 func StartSave(ctx context.Context) {
 
+	enable = true
 	for {
 		select {
 		case <-ctx.Done():

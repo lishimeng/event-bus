@@ -35,41 +35,49 @@ type Subscriber struct {
 
 // 不间断运行, 监听ctx结束
 func (sub *Subscriber) runForever() {
-	//var retry = 0
+	var retry = 0
+	const maxRetryTimes = 90
 	for {
 		select {
 		case <-sub.ctx.Done():
 			return
 		default:
-			_, _ = sub.createConsumer()
-
+			consumer, err := sub.createConsumer()
+			if err != nil {
+				log.Info(err)
+				retry++
+				if retry > maxRetryTimes {
+					retry = maxRetryTimes
+				}
+				time.Sleep(time.Second * time.Duration(retry))
+			} else {
+				retry = 0
+				log.Info("consumer loop start")
+				err = sub.consumerLoop(consumer)
+				if err != nil {
+					log.Info("consumer start fail")
+					log.Info(err)
+				} else {
+					log.Info("consumer loop end")
+				}
+			}
 		}
 	}
 }
 
-// 一次完整运行, 遇到不可预知问题就结束, 但保证线程safety
-func (sub *Subscriber) runOnce(consumer rmq.SimpleConsumer) (err error) {
-
+func (sub *Subscriber) consumerLoop(consumer rmq.PushConsumer) (err error) {
+	err = consumer.Start()
+	if err != nil {
+		log.Info(err)
+		return
+	}
 	defer func() {
-		if r := recover(); r != nil {
-			log.Info(r)
-		}
-		log.Info("stop receive message[%s<-(%s)]", sub.topic, sub.consumerGroup)
 		_ = consumer.GracefulStop()
 	}()
 
-	log.Info("start receive message")
-	for {
-		select {
-		case <-sub.ctx.Done():
-			return
-		default:
-			err = sub.workOnce(consumer)
-			if err != nil {
-				log.Info(err)
-				time.Sleep(time.Second * 1)
-			}
-		}
+	select {
+	case <-sub.ctx.Done():
+		return
 	}
 }
 
@@ -82,7 +90,6 @@ func (sub *Subscriber) createConsumer() (consumer rmq.PushConsumer, err error) {
 			AccessSecret: sub.conf.Secret,
 		},
 	},
-
 		rmq.WithPushAwaitDuration(awaitDuration),
 		rmq.WithPushSubscriptionExpressions(map[string]*rmq.FilterExpression{
 			sub.topic: rmq.SUB_ALL,
@@ -100,44 +107,12 @@ func (sub *Subscriber) createConsumer() (consumer rmq.PushConsumer, err error) {
 		log.Info(err)
 		return
 	}
-	err = consumer.Start()
-	if err != nil {
-		log.Info(err)
-		return
-	}
-	//err = consumer.Subscribe(sub.topic, rmq.SUB_ALL)
 	return
 }
 
 func (sub *Subscriber) Subscribe() {
 	log.Info("subscribe topic:%s[%s]", sub.topic, sub.consumerGroup)
 	sub.runForever()
-	return
-}
-
-func (sub *Subscriber) workOnce(consumer rmq.SimpleConsumer) (err error) {
-	mvs, err := consumer.Receive(context.TODO(), maxMessageNum, invisibleDuration) // 轮询方式
-	if err != nil {
-		rpcStatus, ok := rmq.AsErrRpcStatus(err)
-		if ok {
-			if rpcStatus.Code == 40401 {
-				log.Debug("%s", rpcStatus.Error())
-				err = nil
-				return
-			}
-		}
-		log.Info("receive message error: %s", err.Error())
-		return
-	}
-	// ack message
-	for _, mv := range mvs {
-		sub.handleMessage(mv)
-		if err = consumer.Ack(context.TODO(), mv); err != nil {
-			log.Info("message ack error: %s[%s]"+mv.GetMessageId(), err.Error())
-		} else {
-			log.Info("message ack success: %s", mv.GetMessageId())
-		}
-	}
 	return
 }
 
