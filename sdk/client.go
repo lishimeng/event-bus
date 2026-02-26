@@ -44,7 +44,6 @@ func (c *Client) Publish(route string, msg message.BizMessage) (result Resp, err
 		return
 	}
 	payload := base64.StdEncoding.EncodeToString(bs)
-	// TODO send to server
 	u := c.genUrl(publishPath)
 	m := make(map[string]any)
 	m["payload"] = payload

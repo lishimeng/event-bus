@@ -14,8 +14,9 @@ import (
 
 type RocketMqProvider struct {
 	provider.BaseProvider
-	client    *proxy.Client
-	rmqConfig RmqConfig
+	client          *proxy.Client
+	rmqConfig       RmqConfig
+	messageListener provider.MessageListener
 }
 
 func New(client *proxy.Client, cfg RmqConfig) (p provider.Provider) {
@@ -33,7 +34,7 @@ func (p *RocketMqProvider) Init() {
 	p.AddDecodeHandler(provider.DataRecordMsgHandler)             // 记录接收
 	p.AddDecodeHandler(provider.ChannelChkHandler(db.Subscriber)) // 检查通道支持
 	p.AddDecodeHandler(provider.TlsDecryptHandler)                // 解密数据
-	p.AddDecodeHandler(msgExecHandler)                            // 回调
+	//p.AddDecodeHandler(msgExecHandler)                            // 回调
 
 	// ---------publish--------------------------------------------------
 	p.AddEncodeHandler(provider.DataRecordMsgHandler)
@@ -84,4 +85,11 @@ func (p *RocketMqProvider) UnSubscribe(ch message.Channel) {
 
 func (p *RocketMqProvider) onMessage(m message.Message) {
 	p.BaseProvider.OnMessage(&m)
+	if p.messageListener != nil {
+		p.messageListener(m)
+	}
+}
+
+func (p *RocketMqProvider) SetMessageListener(listener provider.MessageListener) {
+	p.messageListener = listener
 }

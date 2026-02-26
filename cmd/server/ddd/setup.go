@@ -112,6 +112,7 @@ func initRmq(ctx context.Context) (err error) {
 	rmqProvider := RocketMqProvider.New(client, cfg)
 	container.Add(&rmqProvider)
 	engine := proc.NewEngine(rmqProvider)
+	rmqProvider.SetMessageListener(engine.OnMessage)
 	proc.EngineInstance = engine // 初始化message engine
 	return
 }
