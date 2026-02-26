@@ -1,9 +1,7 @@
 package proc
 
 import (
-	"encoding/base64"
-	"encoding/json"
-
+	"gitee.com/lishimeng/event-bus/internal/channel"
 	"gitee.com/lishimeng/event-bus/internal/message"
 	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
 	"gitee.com/lishimeng/event-bus/internal/tls/session"
@@ -13,27 +11,18 @@ import (
 func Callback(m message.Message) (err error) {
 	// 回调业务
 	log.Info("callback message")
-	bs, _ := json.Marshal(m)
-	log.Info(string(bs))
-
-	source := m.Route
-	key, err := base64.StdEncoding.DecodeString(m.Payload.Key)
-	nonce, err := base64.StdEncoding.DecodeString(m.Payload.Nonce)
-	data, err := base64.StdEncoding.DecodeString(m.Payload.Data)
-
-	var payload []byte
-	if UserLocalCipher {
-		payload, err = decodeData(key, nonce, data)
-		if err != nil {
-			log.Info("decode data failed")
-			return
-		}
-	} else {
-		payload = data
+	route := m.Route
+	ch, err := channel.GetPublisher(route)
+	if err != nil {
+		log.Info(err)
+		return
 	}
-
-	log.Info("<-%s [%s]", source, string(payload))
-	// TODO
+	var biz = m.Biz
+	log.Info("callback_uri: %s", ch.Callback)
+	log.Info("[%s]%s", biz.Method, biz.Action)
+	for key, value := range biz.Data {
+		log.Info("%s=%v", key, value)
+	}
 	return
 }
 

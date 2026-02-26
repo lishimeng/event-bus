@@ -40,7 +40,10 @@ func (h *Engine) OnMessage(m message.Message) {
 		return
 	}
 	log.Info("callback_uri: %s", ch.Callback)
-	//Callback(m)
+	err = Callback(m)
+	if err != nil {
+		log.Info(err)
+	}
 }
 
 // Publish 发布消息
