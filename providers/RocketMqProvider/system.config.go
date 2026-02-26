@@ -26,6 +26,7 @@ type RmqConfig struct {
 func (rc *RmqConfig) GetSubscriber(topic string) (s RocketSubscriber, err error) {
 	for _, sub := range rc.Subscribers {
 		if sub.Topic == topic {
+			s = sub
 			return
 		}
 	}

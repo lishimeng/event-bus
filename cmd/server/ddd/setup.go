@@ -9,6 +9,7 @@ import (
 	"gitee.com/lishimeng/event-bus/internal/channel"
 	"gitee.com/lishimeng/event-bus/internal/db"
 	"gitee.com/lishimeng/event-bus/internal/domains/sysCfg"
+	"gitee.com/lishimeng/event-bus/internal/message"
 	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
 	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider"
 	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider/proxy"
@@ -49,12 +50,14 @@ func loadChannels(_ context.Context) (err error) {
 	}
 	log.Info("load channels %d", len(list))
 	for _, item := range list {
-		err = channel.LoadChannel(item)
+		var ch message.Channel
+		ch, err = channel.LoadChannel(item)
 		if err != nil {
 			log.Info("load channel fail, %s[%s]", item.Code, item.Name)
 			return
 		}
 		log.Info("load channel success, %s[%s]", item.Code, item.Name)
+		proc.EngineInstance.Subscribe(ch)
 	}
 	return
 }

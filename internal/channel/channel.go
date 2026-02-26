@@ -17,8 +17,7 @@ func init() {
 	channels = make(map[string]message.Channel)
 }
 
-func LoadChannel(config db.ChannelConfig) (err error) {
-	var ch message.Channel
+func LoadChannel(config db.ChannelConfig) (ch message.Channel, err error) {
 	ch.Code = config.Code
 	ch.Name = config.Name
 	ch.Category = config.Category
@@ -50,6 +49,7 @@ func LoadChannel(config db.ChannelConfig) (err error) {
 		subscribers[ch.Route] = ch
 	default:
 		log.Info("not support channel type, %d", ch.Category)
+		err = errors.New("not support channel type")
 	}
 	return
 }

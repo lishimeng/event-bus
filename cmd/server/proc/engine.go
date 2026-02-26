@@ -21,7 +21,6 @@ func NewEngine(worker provider.Provider) *Engine {
 // Subscribe 订阅
 func (h *Engine) Subscribe(ch message.Channel) {
 	log.Info("subscribe %s[%s] to %s", ch.Code, ch.Name, ch.Route)
-	// TODO
 	h.worker.Subscribe(ch)
 }
 
