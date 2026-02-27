@@ -75,7 +75,7 @@ func (c *Client) Publish(msg Request) (result Resp, err error) {
 	if err != nil {
 		return
 	}
-	err = json.Unmarshal([]byte(resp), &result)
+	err = json.Unmarshal(resp.Body, &result)
 	if err != nil {
 		return
 	}
