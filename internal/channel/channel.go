@@ -2,6 +2,7 @@ package channel
 
 import (
 	"crypto/rsa"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 
@@ -56,7 +57,13 @@ func LoadChannel(config db.ChannelConfig) (ch message.Channel, err error) {
 
 func resolveChSecret(s string, category db.RouteCategory) (c message.ChannelCipher, err error) {
 	var chSecret db.ChannelSecurity
-	err = json.Unmarshal([]byte(s), &chSecret)
+	bs, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		log.Info("base64 decode channel secret")
+		log.Info(err)
+		return
+	}
+	err = json.Unmarshal(bs, &chSecret)
 	if err != nil {
 		return
 	}
