@@ -2,7 +2,9 @@ package channel
 
 import (
 	"errors"
+	"fmt"
 
+	"gitee.com/lishimeng/event-bus/internal/db"
 	"gitee.com/lishimeng/event-bus/internal/message"
 )
 
@@ -35,4 +37,8 @@ func GetPublisher(name string) (ch message.Channel, err error) {
 		return
 	}
 	return
+}
+
+func GenKey(category db.RouteCategory, route string) string {
+	return fmt.Sprintf("%d_%s", category, route)
 }

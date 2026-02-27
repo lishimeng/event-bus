@@ -2,6 +2,7 @@ package message
 
 import (
 	"crypto/rsa"
+	"fmt"
 
 	"gitee.com/lishimeng/event-bus/internal/db"
 	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
@@ -17,6 +18,10 @@ type Channel struct {
 	Cipher   ChannelCipher
 	Callback string     // callback uri
 	s        *session.S // publish通道复用session
+}
+
+func (ch *Channel) GetKey() string {
+	return fmt.Sprintf("%d_%s", ch.Category, ch.Route)
 }
 
 func (ch *Channel) GetSession() *session.S {
