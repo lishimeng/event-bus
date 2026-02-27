@@ -1,6 +1,9 @@
 package db
 
 import (
+	"encoding/base64"
+	"encoding/json"
+
 	"github.com/lishimeng/app-starter"
 )
 
@@ -21,4 +24,25 @@ type ChannelConfig struct {
 type ChannelSecurity struct {
 	RsaKey string `json:"rsaKey,omitempty"`
 	RsaPem string `json:"rsaPem,omitempty"`
+}
+
+func (cs *ChannelSecurity) Marshal() string {
+	bs, err := json.Marshal(cs)
+	if err != nil {
+		return ""
+	}
+	s := base64.StdEncoding.EncodeToString(bs)
+	return s
+}
+
+func (cs *ChannelSecurity) Unmarshal(s string) (err error) {
+	bs, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(bs, &cs)
+	if err != nil {
+		return
+	}
+	return
 }
