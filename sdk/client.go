@@ -60,18 +60,22 @@ func (c *Client) CreateRequest(route string) (r Request) {
 func (c *Client) Publish(msg Request) (result Resp, err error) {
 	method := msg.Biz.Method
 	log.Info("method:%v", method)
+	var resp Response
+	u := c.genUrl(publishPath)
 	method = strings.ToUpper(method)
 	switch method {
 	case "POST":
+		resp, err = GetDefault().Post(u, msg)
 	case "GET":
+		resp, err = GetDefault().Get(u)
 	case "PUT":
+		resp, err = GetDefault().Put(u, msg)
 	case "DELETE":
 	default:
 		err = errors.New("invalid method")
 		return
 	}
-	u := c.genUrl(publishPath)
-	resp, err := GetDefault().Post(u, msg)
+
 	if err != nil {
 		return
 	}

@@ -90,29 +90,31 @@ func (c *RESTClient) Post(url string, body interface{}) (r Response, err error) 
 }
 
 // Put 发起 PUT 请求，body 为任意可序列化为 JSON 的对象
-func (c *RESTClient) Put(url string, body interface{}) (string, error) {
+func (c *RESTClient) Put(url string, body any) (r Response, err error) {
 	jsonData, err := json.Marshal(body)
 	if err != nil {
-		return "", err
+		return
 	}
 
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return "", err
+		return
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return "", err
+		return
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return
 	}
 
-	return string(respBody), nil
+	r.StatusCode = resp.StatusCode
+	r.Body = respBody
+	return
 }
