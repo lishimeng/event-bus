@@ -36,8 +36,9 @@ func (r *Request) WithBiz(biz message.BizMessage) *Request {
 }
 
 type Resp struct {
-	Code int    `json:"code"`
-	Msg  string `json:"msg"`
+	Code      int    `json:"code"`
+	Msg       string `json:"msg"`
+	MessageId string `json:"messageId"`
 }
 
 type Client struct {

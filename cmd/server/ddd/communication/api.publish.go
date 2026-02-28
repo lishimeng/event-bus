@@ -36,7 +36,7 @@ func apiPublish(ctx server.Context) {
 			log.Info("base64 decode fail")
 			log.Info(err)
 			resp.Code = http.StatusBadRequest
-			resp.Msg = "base64 decode fail"
+			resp.Msg = "[payload]base64 decode fail"
 			ctx.Json(resp)
 			return
 		}
@@ -45,7 +45,7 @@ func apiPublish(ctx server.Context) {
 			log.Info("json unmarshal fail")
 			log.Info(err)
 			resp.Code = http.StatusBadRequest
-			resp.Msg = "json unmarshal fail"
+			resp.Msg = "[payload]json unmarshal fail"
 			ctx.Json(resp)
 			return
 		}
@@ -59,12 +59,13 @@ func apiPublish(ctx server.Context) {
 		log.Info("create fail")
 		log.Info(err)
 		resp.Code = http.StatusInternalServerError
-		resp.Msg = "create fail"
+		resp.Msg = "create fail" + err.Error()
 		ctx.Json(resp)
 		return
 	}
 	proc.Publish(msg)
 	resp.Code = http.StatusOK
-	resp.Msg = msg.RequestId
+	resp.Msg = "message commit success"
+	resp.MessageId = msg.RequestId
 	ctx.Json(resp)
 }
