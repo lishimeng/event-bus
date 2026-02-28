@@ -13,6 +13,22 @@ const (
 	PublishTo RouteCategory = 2 // 发布到第三方系统的通道
 )
 
+var categories = make(map[RouteCategory]string)
+
+func init() {
+	categories[Subscribe] = "Subscribe"
+	categories[PublishTo] = "PublishTo"
+}
+
+func (rc RouteCategory) String() string {
+
+	name, ok := categories[rc]
+	if !ok {
+		name = "unknown"
+	}
+	return name
+}
+
 const (
 	Init       DataRecordState = 1
 	Processing DataRecordState = 2

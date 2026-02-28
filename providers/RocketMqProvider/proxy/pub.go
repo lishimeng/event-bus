@@ -72,6 +72,7 @@ func (p *Publisher) work() {
 	defer func() {
 		_ = producer.GracefulStop()
 	}()
+	log.Info("start publisher success, wait for exit")
 	for {
 		select {
 		case <-p.ctx.Done():

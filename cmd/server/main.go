@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"time"
 
@@ -52,13 +53,20 @@ func _main() (err error) {
 			SSL:       etc.Config.Db.Ssl,
 		}
 
+		var dbLogEnabled = os.Getenv("DB_LOG_ENABLED")
+		var webLogEnabled = os.Getenv("WEB_LOG_ENABLED")
+
 		builder.
 			EnableDatabase(dbConfig.Build(), ddd.Tables()...).
-			EnableDatabaseLog().
-			SetWebLogLevel("DEBUG").
 			ComponentBefore(ddd.BeforeWeb).
 			EnableWeb(etc.Config.Web.Listen, ddd.Router).
 			PrintVersion()
+		if dbLogEnabled == "1" {
+			builder.EnableDatabaseLog()
+		}
+		if webLogEnabled == "1" {
+			builder.SetWebLogLevel("DEBUG")
+		}
 		return err
 	}, func(s string) {
 		log.Info(s)

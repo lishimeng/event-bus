@@ -52,7 +52,7 @@ func (sub *Subscriber) runForever() {
 				time.Sleep(time.Second * time.Duration(retry))
 			} else {
 				retry = 0
-				log.Info("consumer loop start")
+				log.Info("consumer loop start[retry:%d]", retry)
 				err = sub.consumerLoop(consumer)
 				if err != nil {
 					log.Info("consumer start fail")
@@ -66,8 +66,10 @@ func (sub *Subscriber) runForever() {
 }
 
 func (sub *Subscriber) consumerLoop(consumer rmq.PushConsumer) (err error) {
+	log.Info("start consumer loop %s", sub.topic)
 	err = consumer.Start()
 	if err != nil {
+		log.Info("consumer start fail")
 		log.Info(err)
 		return
 	}
@@ -75,8 +77,10 @@ func (sub *Subscriber) consumerLoop(consumer rmq.PushConsumer) (err error) {
 		_ = consumer.GracefulStop()
 	}()
 
+	log.Info("consumer loop start success, wait for exit")
 	select {
 	case <-sub.ctx.Done():
+		log.Info("consumer loop exit")
 		return
 	}
 }

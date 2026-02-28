@@ -61,7 +61,7 @@ func LoadChannel(config db.ChannelConfig) (ch message.Channel, err error) {
 
 	// 全局通道
 	managerSingleton.Register(ch)
-	log.Info("load channel success. %s[%s]->%s:category:%d", ch.Code, ch.Name, ch.Route, ch.Category)
+	log.Info("load channel success. %s[%s]->%s:category:%s", ch.Code, ch.Name, ch.Route, ch.Category.String())
 
 	// 分组通道
 	switch ch.Category {
