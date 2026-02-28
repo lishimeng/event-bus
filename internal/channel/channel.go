@@ -2,7 +2,6 @@ package channel
 
 import (
 	"crypto/rsa"
-	"encoding/json"
 	"errors"
 
 	"gitee.com/lishimeng/event-bus/internal/db"
@@ -29,10 +28,13 @@ func LoadChannel(config db.ChannelConfig) (ch message.Channel, err error) {
 		if err != nil {
 			return
 		}
-		err = ch.RefreshSession() // 保证session不空
-		if err != nil {
-			return
+		if config.Category == db.Subscriber { // subscriber预先创建session
+			err = ch.RefreshSession() // 保证session不空
+			if err != nil {
+				return
+			}
 		}
+
 	}
 
 	// 全局通道
@@ -56,22 +58,24 @@ func LoadChannel(config db.ChannelConfig) (ch message.Channel, err error) {
 
 func resolveChSecret(s string, category db.RouteCategory) (c message.ChannelCipher, err error) {
 	var chSecret db.ChannelSecurity
-	err = json.Unmarshal([]byte(s), &chSecret)
+	err = chSecret.Unmarshal(s)
 	if err != nil {
+		log.Info("unmarshal channel secret")
+		log.Info(err)
 		return
 	}
 
 	var pubKey *rsa.PublicKey
 	var priKey *rsa.PrivateKey
-	if category == db.Subscriber {
+	if len(chSecret.RsaPem) > 0 {
 		pubKey, err = cypher.LoadPublicKey([]byte(chSecret.RsaPem))
 		if err != nil {
 			return
 		}
 		c.RsaPubKey = pubKey // 通道中只加载公钥
 	}
-	if category == db.Publish {
-		priKey, err = cypher.LoadPrivateKey([]byte(chSecret.RsaPem))
+	if len(chSecret.RsaKey) > 0 {
+		priKey, err = cypher.LoadPrivateKey([]byte(chSecret.RsaKey))
 		if err != nil {
 			return
 		}
