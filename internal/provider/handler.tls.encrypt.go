@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"gitee.com/lishimeng/event-bus/internal/channel"
+	"gitee.com/lishimeng/event-bus/internal/db"
 	"gitee.com/lishimeng/event-bus/internal/message"
 	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
 	"gitee.com/lishimeng/event-bus/internal/tls/session"
@@ -12,7 +13,7 @@ import (
 
 // TlsEncryptHandler 加
 var TlsEncryptHandler MessageHandler = func(msg *message.Message, ctx map[string]any) (err error) {
-	ch, err := channel.GetChannel(msg.Route)
+	ch, err := channel.GetChannel(msg.Route, db.PublishTo) // 用于发布的通道
 	if err != nil {
 		return
 	}

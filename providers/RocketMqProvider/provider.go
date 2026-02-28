@@ -31,14 +31,14 @@ func New(client *proxy.Client, cfg RmqConfig) (p provider.Provider) {
 
 func (p *RocketMqProvider) Init() {
 	// ----------subscribe-----------------------------------------
-	p.AddDecodeHandler(provider.DataRecordMsgHandler)             // 记录接收
-	p.AddDecodeHandler(provider.ChannelChkHandler(db.Subscriber)) // 检查通道支持
-	p.AddDecodeHandler(provider.TlsDecryptHandler)                // 解密数据
+	p.AddDecodeHandler(provider.DataRecordMsgHandler)            // 记录接收
+	p.AddDecodeHandler(provider.ChannelChkHandler(db.Subscribe)) // 检查通道支持
+	p.AddDecodeHandler(provider.TlsDecryptHandler)               // 解密数据
 	//p.AddDecodeHandler(msgExecHandler)                            // 回调
 
 	// ---------publish--------------------------------------------------
 	p.AddEncodeHandler(provider.DataRecordMsgHandler)
-	p.AddEncodeHandler(provider.ChannelChkHandler(db.Publish))
+	p.AddEncodeHandler(provider.ChannelChkHandler(db.PublishTo))
 	p.AddEncodeHandler(provider.TlsEncryptHandler) // 加密
 	p.AddEncodeHandler(rmqMsgPubHandler)
 }

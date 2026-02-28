@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"gitee.com/lishimeng/event-bus/internal/channel"
+	"gitee.com/lishimeng/event-bus/internal/db"
 	"gitee.com/lishimeng/event-bus/internal/message"
 	"gitee.com/lishimeng/event-bus/internal/provider"
 	"github.com/lishimeng/go-log"
@@ -35,7 +36,7 @@ func (h *Engine) OnMessage(m message.Message) {
 	bizMessage := m.Biz
 
 	log.Info("biz_msg: %s[%s]", bizMessage.Action, bizMessage.Method)
-	ch, err := channel.GetChannel(m.Route)
+	ch, err := channel.GetChannel(m.Route, db.Subscribe) // 订阅类别(业务系统订阅)
 	if err != nil {
 		return
 	}

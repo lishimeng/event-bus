@@ -21,7 +21,11 @@ type Channel struct {
 }
 
 func (ch *Channel) GetKey() string {
-	return fmt.Sprintf("%d_%s", ch.Category, ch.Route)
+	return GenKey(ch.Category, ch.Route)
+}
+
+func GenKey(category db.RouteCategory, route string) string {
+	return fmt.Sprintf("%d_%s", category, route)
 }
 
 func (ch *Channel) GetSession() *session.S {

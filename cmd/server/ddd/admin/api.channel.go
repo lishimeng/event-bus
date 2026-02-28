@@ -52,7 +52,7 @@ func apiChannelConfig(ctx server.Context) {
 		ctx.Json(resp)
 		return
 	}
-	if req.Category != db.Publish && req.Category != db.Subscriber {
+	if req.Category != db.PublishTo && req.Category != db.Subscribe {
 		resp.Code = http.StatusBadRequest
 		resp.Message = "category not support"
 		ctx.Json(resp)

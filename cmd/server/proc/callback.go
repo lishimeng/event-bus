@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"gitee.com/lishimeng/event-bus/internal/channel"
+	"gitee.com/lishimeng/event-bus/internal/db"
 	"gitee.com/lishimeng/event-bus/internal/message"
 	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
 	"gitee.com/lishimeng/event-bus/internal/tls/session"
@@ -17,7 +18,7 @@ func Callback(m message.Message) (err error) {
 	// 回调业务
 	log.Info("callback message")
 	route := m.Route
-	ch, err := channel.GetChannel(route)
+	ch, err := channel.GetChannel(route, db.Subscribe) // 类别为业务系统接收的通道[订阅通道]
 	if err != nil {
 		log.Info(err)
 		return

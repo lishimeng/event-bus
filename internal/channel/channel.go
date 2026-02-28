@@ -10,10 +10,32 @@ import (
 	"github.com/lishimeng/go-log"
 )
 
-var channels map[string]message.Channel // route:channel
+type Manager struct {
+	// channel列表: Category_router-> channel实例
+	channels map[string]message.Channel
+}
+
+func (m *Manager) Register(c message.Channel) {
+	m.channels[c.GetKey()] = c
+}
+
+func (m *Manager) Get(key string) (ch message.Channel, err error) {
+	ch, ok := m.channels[key]
+	if !ok {
+		err = errors.New("channel not found")
+	}
+	return
+}
+
+func (m *Manager) GetCh(route string, c db.RouteCategory) (ch message.Channel, err error) {
+	key := message.GenKey(c, route)
+	return m.Get(key)
+}
+
+var managerSingleton *Manager
 
 func init() {
-	channels = make(map[string]message.Channel)
+	managerSingleton = &Manager{channels: make(map[string]message.Channel)}
 }
 
 func LoadChannel(config db.ChannelConfig) (ch message.Channel, err error) {
@@ -28,7 +50,7 @@ func LoadChannel(config db.ChannelConfig) (ch message.Channel, err error) {
 		if err != nil {
 			return
 		}
-		if config.Category == db.Subscriber { // subscriber预先创建session
+		if config.Category == db.Subscribe { // subscriber预先创建session
 			err = ch.RefreshSession() // 保证session不空
 			if err != nil {
 				return
@@ -38,15 +60,15 @@ func LoadChannel(config db.ChannelConfig) (ch message.Channel, err error) {
 	}
 
 	// 全局通道
-	channels[ch.Route] = ch
+	managerSingleton.Register(ch)
 	log.Info("load channel success. %s[%s]->%s:category:%d", ch.Code, ch.Name, ch.Route, ch.Category)
 
 	// 分组通道
 	switch ch.Category {
-	case db.Publish:
+	case db.PublishTo:
 		log.Info("publish channel register")
 		publishers[ch.Route] = ch
-	case db.Subscriber:
+	case db.Subscribe:
 		log.Info("subscriber channel register")
 		subscribers[ch.Route] = ch
 	default:
@@ -86,11 +108,7 @@ func resolveChSecret(s string, category db.RouteCategory) (c message.ChannelCiph
 }
 
 // GetChannel 查询支持的通道(全局通道)
-func GetChannel(name string) (ch message.Channel, err error) {
-	ch, ok := channels[name]
-	if !ok {
-		err = errors.New("channel not found")
-		return
-	}
+func GetChannel(route string, category db.RouteCategory) (ch message.Channel, err error) {
+	ch, err = managerSingleton.GetCh(route, category)
 	return
 }
