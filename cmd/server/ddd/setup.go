@@ -57,7 +57,7 @@ func loadChannels(_ context.Context) (err error) {
 			return
 		}
 		log.Info("load channel success, %s[%s]", item.Code, item.Name)
-		if ch.Category == db.Subscribe {
+		if ch.Category == db.Subscribe { // 需要执行subscribe
 			proc.EngineInstance.Subscribe(ch)
 		}
 	}
