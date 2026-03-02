@@ -1,6 +1,6 @@
 package proc
 
-import "gitee.com/lishimeng/event-bus/internal/message"
+import "github.com/lishimeng/event-bus/internal/message"
 
 var UserLocalCipher = false
 

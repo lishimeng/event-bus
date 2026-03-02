@@ -1,7 +1,7 @@
 package ddd
 
 import (
-	"gitee.com/lishimeng/event-bus/internal/db"
+	"github.com/lishimeng/event-bus/internal/db"
 )
 
 func Tables() (t []any) {

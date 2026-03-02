@@ -3,10 +3,10 @@ package proc
 import (
 	"context"
 
-	"gitee.com/lishimeng/event-bus/internal/channel"
-	"gitee.com/lishimeng/event-bus/internal/db"
-	"gitee.com/lishimeng/event-bus/internal/message"
-	"gitee.com/lishimeng/event-bus/internal/provider"
+	"github.com/lishimeng/event-bus/internal/channel"
+	"github.com/lishimeng/event-bus/internal/db"
+	"github.com/lishimeng/event-bus/internal/message"
+	"github.com/lishimeng/event-bus/internal/provider"
 	"github.com/lishimeng/go-log"
 )
 

@@ -5,10 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"gitee.com/lishimeng/event-bus/cmd/server/proc"
-	"gitee.com/lishimeng/event-bus/internal/message"
-	"gitee.com/lishimeng/event-bus/sdk"
 	"github.com/lishimeng/app-starter/server"
+	"github.com/lishimeng/event-bus/cmd/server/proc"
+	"github.com/lishimeng/event-bus/sdk"
 	"github.com/lishimeng/go-log"
 )
 
@@ -28,7 +27,7 @@ func apiPublish(ctx server.Context) {
 		return
 	}
 
-	var biz message.BizMessage
+	var biz sdk.BizMessage
 	if len(req.Payload) > 0 { // 覆盖biz字段
 		var bs []byte
 		bs, err = base64.StdEncoding.DecodeString(req.Payload)

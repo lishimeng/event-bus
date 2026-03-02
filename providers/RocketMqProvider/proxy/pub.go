@@ -2,10 +2,11 @@ package proxy
 
 import (
 	"context"
+	"time"
 
-	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider/msgRecord"
 	rmq "github.com/apache/rocketmq-clients/golang/v5"
 	"github.com/apache/rocketmq-clients/golang/v5/credentials"
+	"github.com/lishimeng/event-bus/providers/RocketMqProvider/msgRecord"
 	"github.com/lishimeng/go-log"
 )
 
@@ -33,6 +34,7 @@ func (p *Publisher) forever() {
 			return
 		default:
 			p.work()
+			time.Sleep(time.Second * 3)
 		}
 	}
 }

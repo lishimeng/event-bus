@@ -1,9 +1,9 @@
 package ddd
 
 import (
-	"gitee.com/lishimeng/event-bus/cmd/server/ddd/admin"
-	"gitee.com/lishimeng/event-bus/cmd/server/ddd/communication"
 	"github.com/lishimeng/app-starter/server"
+	"github.com/lishimeng/event-bus/cmd/server/ddd/admin"
+	"github.com/lishimeng/event-bus/cmd/server/ddd/communication"
 )
 
 func Router(root server.Router) {

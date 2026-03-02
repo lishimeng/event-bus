@@ -7,10 +7,10 @@ import (
 
 	"time"
 
-	"gitee.com/lishimeng/event-bus/cmd/server/ddd"
-	"gitee.com/lishimeng/event-bus/internal/etc"
 	"github.com/lishimeng/app-starter"
 	"github.com/lishimeng/app-starter/persistence"
+	"github.com/lishimeng/event-bus/cmd/server/ddd"
+	"github.com/lishimeng/event-bus/internal/etc"
 	"github.com/lishimeng/go-log"
 )
 
@@ -52,6 +52,7 @@ func _main() (err error) {
 			AliasName: "default",
 			SSL:       etc.Config.Db.Ssl,
 		}
+		log.Info("database config: %s[%d]-->%s", dbConfig.Host, dbConfig.Port, dbConfig.DbName)
 
 		var dbLogEnabled = os.Getenv("DB_LOG_ENABLED")
 		var webLogEnabled = os.Getenv("WEB_LOG_ENABLED")
