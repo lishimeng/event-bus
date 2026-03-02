@@ -1,4 +1,4 @@
-module gitee.com/lishimeng/event-bus
+module github.com/lishimeng/event-bus
 
 go 1.24.10
 
