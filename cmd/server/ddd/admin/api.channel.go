@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"time"
 
-	"gitee.com/lishimeng/event-bus/internal/db"
 	"github.com/lishimeng/app-starter"
 	"github.com/lishimeng/app-starter/server"
+	"github.com/lishimeng/event-bus/internal/db"
 	"github.com/lishimeng/go-log"
 )
 

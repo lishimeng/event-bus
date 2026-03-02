@@ -4,12 +4,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
-	"gitee.com/lishimeng/event-bus/internal/tls/session"
+	"github.com/lishimeng/event-bus/internal/tls/cypher"
+	"github.com/lishimeng/event-bus/internal/tls/session"
+	"github.com/lishimeng/event-bus/sdk"
 	"github.com/lishimeng/go-log"
 )
 
-func Encrypt(biz BizMessage, target Channel) (payload session.Payload, err error) {
+func Encrypt(biz sdk.BizMessage, target Channel) (payload session.Payload, err error) {
 	bs, err := json.Marshal(biz)
 	if err != nil {
 		return
@@ -34,7 +35,7 @@ func Encrypt(biz BizMessage, target Channel) (payload session.Payload, err error
 	return
 }
 
-func Decrypt(payload session.Payload, receiver Channel) (biz BizMessage, err error) {
+func Decrypt(payload session.Payload, receiver Channel) (biz sdk.BizMessage, err error) {
 	body := payload.Data
 	dataBytes, err := base64.StdEncoding.DecodeString(body)
 	if err != nil {

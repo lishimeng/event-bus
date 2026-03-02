@@ -18,6 +18,9 @@ type Conf struct {
 	Host                  string
 	publisherMessageGroup string
 	publisherTopics       []string
+	consumerGroup         string
+	consumerTopics        []string
+	consumerHandler       OnMessageFunc
 	Auth
 }
 
@@ -39,11 +42,23 @@ var WithPublisherConfigs = func(messageGroup string, topics ...string) OptFunc {
 	}
 }
 
+var WithConsumerConfigs = func(messageGroup string, topics ...string) OptFunc {
+	return func(opt *Conf) {
+		opt.consumerGroup = messageGroup
+		opt.consumerTopics = topics
+	}
+}
+
+var WithConsumerHandler = func(handler OnMessageFunc) OptFunc {
+	return func(opt *Conf) {
+		opt.consumerHandler = handler
+	}
+}
+
 type Client struct {
 	ctx               context.Context
 	config            Conf
 	lock              sync.RWMutex
-	closeMap          map[string]func()
 	globalMessageFunc OnMessageFunc
 
 	publisher *Publisher
@@ -59,8 +74,16 @@ func New(ctx context.Context, opts ...OptFunc) (c *Client) {
 	return
 }
 
+func (c *Client) Start() {
+	go func() {
+		c.publisher.start()
+	}()
+	go func() {
+		c.subscribe(c.config.consumerTopics, c.config.consumerGroup, c.config.consumerHandler)
+	}()
+}
+
 func (c *Client) initClient() {
-	c.closeMap = make(map[string]func())
 	c.initPublisher()
 }
 
@@ -72,27 +95,19 @@ func (c *Client) initPublisher() {
 		topics:       c.config.publisherTopics,
 		messageGroup: c.config.publisherMessageGroup,
 	}
-	go func() {
-		c.publisher.start()
-	}()
 }
 
 func (c *Client) Publish(topic string, data []byte) {
 	c.publisher.Publish(topic, data)
 }
 
-func (c *Client) Subscribe(topic string, group string, fn OnMessageFunc) {
-	go c.subscribe(topic, group, fn)
-}
-
 // Subscribe 阻塞
-func (c *Client) subscribe(topic string, group string, fn OnMessageFunc) {
+func (c *Client) subscribe(topics []string, group string, fn OnMessageFunc) {
 	ctx, cancel := context.WithCancel(c.ctx)
-	c.closeMap[topic] = cancel
 	defer cancel()
 	var subscriber = Subscriber{
 		ctx:           ctx,
-		topic:         topic,
+		topics:        topics,
 		conf:          c.config,
 		consumerGroup: group,
 		onMessage:     fn,
@@ -104,32 +119,5 @@ func (c *Client) subscribe(topic string, group string, fn OnMessageFunc) {
 }
 
 func (c *Client) UnSubscribe(topic string) {
-	c.close(topic)
-}
 
-func (c *Client) closeAll() {
-	var list = c.genList()
-	for _, name := range list {
-		c.close(name)
-	}
-}
-
-func (c *Client) genList() (list []string) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	for name := range c.closeMap {
-		list = append(list, name)
-	}
-	return
-}
-
-func (c *Client) close(name string) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	stopFunc, ok := c.closeMap[name]
-	if !ok {
-		return
-	}
-	stopFunc()
-	delete(c.closeMap, name)
 }

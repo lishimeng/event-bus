@@ -4,15 +4,17 @@ import (
 	"crypto/rsa"
 	"errors"
 
-	"gitee.com/lishimeng/event-bus/internal/db"
-	"gitee.com/lishimeng/event-bus/internal/message"
-	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
+	"github.com/lishimeng/event-bus/internal/db"
+	"github.com/lishimeng/event-bus/internal/message"
+	"github.com/lishimeng/event-bus/internal/tls/cypher"
 	"github.com/lishimeng/go-log"
 )
 
 type Manager struct {
 	// channel列表: Category_router-> channel实例
-	channels map[string]message.Channel
+	channels   map[string]message.Channel
+	subscribes map[string]byte
+	publishes  map[string]byte
 }
 
 func (m *Manager) Register(c message.Channel) {
@@ -32,10 +34,32 @@ func (m *Manager) GetCh(route string, c db.RouteCategory) (ch message.Channel, e
 	return m.Get(key)
 }
 
-var managerSingleton *Manager
+func (m *Manager) SubscribeTopics() (list []string) {
+	for topic := range m.subscribes {
+		list = append(list, topic)
+	}
+	return
+}
+
+func (m *Manager) PublishTopics() (list []string) {
+	for topic := range m.publishes {
+		list = append(list, topic)
+	}
+	return
+}
+
+var manager *Manager
 
 func init() {
-	managerSingleton = &Manager{channels: make(map[string]message.Channel)}
+	manager = &Manager{
+		channels:   make(map[string]message.Channel),
+		subscribes: make(map[string]byte),
+		publishes:  make(map[string]byte),
+	}
+}
+
+func GetManager() *Manager {
+	return manager
 }
 
 func LoadChannel(config db.ChannelConfig) (ch message.Channel, err error) {
@@ -50,27 +74,26 @@ func LoadChannel(config db.ChannelConfig) (ch message.Channel, err error) {
 		if err != nil {
 			return
 		}
-		if config.Category == db.Subscribe { // subscriber预先创建session
+		if config.Category == db.PublishTo { // 发送类通道预先创建session
 			err = ch.RefreshSession() // 保证session不空
 			if err != nil {
 				return
 			}
 		}
-
 	}
 
 	// 全局通道
-	managerSingleton.Register(ch)
+	manager.Register(ch)
 	log.Info("load channel success. %s[%s]->%s:category:%s", ch.Code, ch.Name, ch.Route, ch.Category.String())
 
 	// 分组通道
 	switch ch.Category {
 	case db.PublishTo:
 		log.Info("publish channel register")
-		publishers[ch.Route] = ch
+		manager.publishes[ch.Route] = 1
 	case db.Subscribe:
 		log.Info("subscriber channel register")
-		subscribers[ch.Route] = ch
+		manager.subscribes[ch.Route] = 1
 	default:
 		log.Info("not support channel type, %d", ch.Category)
 		err = errors.New("not support channel type")
@@ -94,7 +117,7 @@ func resolveChSecret(s string, category db.RouteCategory) (c message.ChannelCiph
 		if err != nil {
 			return
 		}
-		c.RsaPubKey = pubKey // 通道中只加载公钥
+		c.RsaPubKey = pubKey
 	}
 	if len(chSecret.RsaKey) > 0 {
 		priKey, err = cypher.LoadPrivateKey([]byte(chSecret.RsaKey))
@@ -109,6 +132,6 @@ func resolveChSecret(s string, category db.RouteCategory) (c message.ChannelCiph
 
 // GetChannel 查询支持的通道(全局通道)
 func GetChannel(route string, category db.RouteCategory) (ch message.Channel, err error) {
-	ch, err = managerSingleton.GetCh(route, category)
+	ch, err = manager.GetCh(route, category)
 	return
 }

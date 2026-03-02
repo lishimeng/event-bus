@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 
-	"gitee.com/lishimeng/event-bus/internal/db"
 	"github.com/lishimeng/app-starter"
+	"github.com/lishimeng/event-bus/internal/db"
 )
 
 var cacheEnable = false

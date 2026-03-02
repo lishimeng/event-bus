@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	rmq "github.com/apache/rocketmq-clients/golang/v5"
@@ -28,7 +29,7 @@ var (
 type Subscriber struct {
 	ctx           context.Context
 	conf          Conf          // 连接配置
-	topic         string        // 订阅
+	topics        []string      // 订阅
 	consumerGroup string        // 消费组
 	onMessage     OnMessageFunc // 回调
 }
@@ -66,7 +67,7 @@ func (sub *Subscriber) runForever() {
 }
 
 func (sub *Subscriber) consumerLoop(consumer rmq.PushConsumer) (err error) {
-	log.Info("start consumer loop %s", sub.topic)
+	log.Info("start consumer loop")
 	err = consumer.Start()
 	if err != nil {
 		log.Info("consumer start fail")
@@ -86,6 +87,16 @@ func (sub *Subscriber) consumerLoop(consumer rmq.PushConsumer) (err error) {
 }
 
 func (sub *Subscriber) createConsumer() (consumer rmq.PushConsumer, err error) {
+
+	if len(sub.topics) == 0 {
+		err = errors.New("no topic for subscriber")
+		return
+	}
+	subscribeFilter := make(map[string]*rmq.FilterExpression)
+	for _, topic := range sub.topics {
+		log.Info("subscribe topic: %s", topic)
+		subscribeFilter[topic] = rmq.SUB_ALL
+	}
 	consumer, err = rmq.NewPushConsumer(&rmq.Config{
 		Endpoint:      sub.conf.Host,
 		ConsumerGroup: sub.consumerGroup,
@@ -95,9 +106,7 @@ func (sub *Subscriber) createConsumer() (consumer rmq.PushConsumer, err error) {
 		},
 	},
 		rmq.WithPushAwaitDuration(awaitDuration),
-		rmq.WithPushSubscriptionExpressions(map[string]*rmq.FilterExpression{
-			sub.topic: rmq.SUB_ALL,
-		}),
+		rmq.WithPushSubscriptionExpressions(subscribeFilter),
 		rmq.WithPushMessageListener(&rmq.FuncMessageListener{
 			Consume: func(mv *rmq.MessageView) rmq.ConsumerResult {
 				sub.handleMessage(mv)
@@ -115,7 +124,10 @@ func (sub *Subscriber) createConsumer() (consumer rmq.PushConsumer, err error) {
 }
 
 func (sub *Subscriber) Subscribe() {
-	log.Info("subscribe topic:%s[%s]", sub.topic, sub.consumerGroup)
+	log.Info("subscribe with consumer_group:%s", sub.consumerGroup)
+	for _, topic := range sub.topics {
+		log.Info("\ttopic: %s", topic)
+	}
 	sub.runForever()
 	return
 }

@@ -3,8 +3,8 @@ package RocketMqProvider
 import (
 	"encoding/json"
 
-	"gitee.com/lishimeng/event-bus/internal/message"
-	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider/proxy"
+	"github.com/lishimeng/event-bus/internal/message"
+	"github.com/lishimeng/event-bus/providers/RocketMqProvider/proxy"
 	"github.com/lishimeng/go-log"
 	"github.com/lishimeng/x/container"
 )

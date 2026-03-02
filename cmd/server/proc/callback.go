@@ -5,12 +5,12 @@ import (
 	"net/url"
 	"strings"
 
-	"gitee.com/lishimeng/event-bus/internal/channel"
-	"gitee.com/lishimeng/event-bus/internal/db"
-	"gitee.com/lishimeng/event-bus/internal/message"
-	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
-	"gitee.com/lishimeng/event-bus/internal/tls/session"
-	"gitee.com/lishimeng/event-bus/sdk"
+	"github.com/lishimeng/event-bus/internal/channel"
+	"github.com/lishimeng/event-bus/internal/db"
+	"github.com/lishimeng/event-bus/internal/message"
+	"github.com/lishimeng/event-bus/internal/tls/cypher"
+	"github.com/lishimeng/event-bus/internal/tls/session"
+	"github.com/lishimeng/event-bus/sdk"
 	"github.com/lishimeng/go-log"
 )
 

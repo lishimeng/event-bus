@@ -1,32 +1,68 @@
 package RocketMqProvider
 
 import (
+	"context"
 	"encoding/json"
 
-	"gitee.com/lishimeng/event-bus/internal/db"
-	"gitee.com/lishimeng/event-bus/internal/message"
-	"gitee.com/lishimeng/event-bus/internal/provider"
-	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider/msgRecord"
-	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider/proxy"
 	rmq "github.com/apache/rocketmq-clients/golang/v5"
+	"github.com/lishimeng/event-bus/internal/db"
+	"github.com/lishimeng/event-bus/internal/message"
+	"github.com/lishimeng/event-bus/internal/provider"
+	"github.com/lishimeng/event-bus/providers/RocketMqProvider/msgRecord"
+	"github.com/lishimeng/event-bus/providers/RocketMqProvider/proxy"
 	"github.com/lishimeng/go-log"
+	"github.com/lishimeng/x/container"
 )
 
 type RocketMqProvider struct {
+	ctx context.Context
 	provider.BaseProvider
 	client          *proxy.Client
 	rmqConfig       RmqConfig
+	publishTopics   []string
+	subscribeTopics []string
 	messageListener provider.MessageListener
 }
 
-func New(client *proxy.Client, cfg RmqConfig) (p provider.Provider) {
+func New(ctx context.Context, cfg RmqConfig, publishTopics []string, subscribeTopics []string) (p provider.Provider) {
 	h := &RocketMqProvider{
-		client:    client,
-		rmqConfig: cfg,
+		ctx:             ctx,
+		rmqConfig:       cfg,
+		publishTopics:   publishTopics,
+		subscribeTopics: subscribeTopics,
 	}
 	h.Init()
 	p = h
+	go func() {
+		h.client.Start()
+	}()
 	return
+}
+
+func (p *RocketMqProvider) createProxy() {
+	var cfg = p.rmqConfig
+	var publishTopics = p.publishTopics
+	var subscribeTopics = p.subscribeTopics
+	client := proxy.New(p.ctx,
+		proxy.WithEndpoint(p.rmqConfig.Endpoint),
+		proxy.WithAuth(cfg.AppId, cfg.Secret),
+		proxy.WithPublisherConfigs(cfg.Publisher.MessageGroup, publishTopics...),
+		proxy.WithConsumerConfigs(cfg.Subscribers[0].ConsumerGroup, subscribeTopics...),
+		proxy.WithConsumerHandler(func(mv *rmq.MessageView) {
+			msgRecord.OnMessage(mv.GetMessageId(), mv.GetTopic(), string(mv.GetBody()))
+			var m message.Message // TODO
+
+			err := json.Unmarshal(mv.GetBody(), &m)
+			if err != nil {
+				log.Info(err)
+				return
+			}
+			m.Route = mv.GetTopic() // 修正一次router,与rmq中一致
+			p.onMessage(m)
+		}),
+	)
+	container.Add(&client)
+	p.client = client
 }
 
 func (p *RocketMqProvider) Init() {
@@ -41,6 +77,8 @@ func (p *RocketMqProvider) Init() {
 	p.AddEncodeHandler(provider.ChannelChkHandler(db.PublishTo))
 	p.AddEncodeHandler(provider.TlsEncryptHandler) // 加密
 	p.AddEncodeHandler(rmqMsgPubHandler)
+
+	p.createProxy()
 }
 
 func (p *RocketMqProvider) Publish(m message.Message) {
@@ -56,26 +94,7 @@ func (p *RocketMqProvider) Publish(m message.Message) {
 }
 
 func (p *RocketMqProvider) Subscribe(ch message.Channel) {
-
-	topic := ch.Route
-	subCfg, err := p.rmqConfig.GetSubscriber(topic)
-	if err != nil {
-		log.Info("subscribe fail, topic not supported[%s]", topic)
-		log.Info(err)
-		return
-	}
-	p.client.Subscribe(subCfg.Topic, subCfg.ConsumerGroup, func(mv *rmq.MessageView) {
-		msgRecord.OnMessage(mv.GetMessageId(), mv.GetTopic(), string(mv.GetBody()))
-		var m message.Message // TODO
-
-		err = json.Unmarshal(mv.GetBody(), &m)
-		if err != nil {
-			log.Info(err)
-			return
-		}
-		m.Route = mv.GetTopic() // 修正一次router,与rmq中一致
-		p.onMessage(m)
-	})
+	log.Info("dummy subscribe: %s", ch.Name)
 }
 
 func (p *RocketMqProvider) UnSubscribe(ch message.Channel) {

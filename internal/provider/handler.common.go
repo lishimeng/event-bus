@@ -3,7 +3,7 @@ package provider
 import (
 	"time"
 
-	"gitee.com/lishimeng/event-bus/internal/message"
+	"github.com/lishimeng/event-bus/internal/message"
 	"github.com/lishimeng/go-log"
 )
 

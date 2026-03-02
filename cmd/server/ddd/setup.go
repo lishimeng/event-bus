@@ -5,15 +5,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	"gitee.com/lishimeng/event-bus/cmd/server/proc"
-	"gitee.com/lishimeng/event-bus/internal/channel"
-	"gitee.com/lishimeng/event-bus/internal/db"
-	"gitee.com/lishimeng/event-bus/internal/domains/sysCfg"
-	"gitee.com/lishimeng/event-bus/internal/message"
-	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
-	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider"
-	"gitee.com/lishimeng/event-bus/providers/RocketMqProvider/proxy"
 	"github.com/lishimeng/app-starter"
+	"github.com/lishimeng/event-bus/cmd/server/proc"
+	"github.com/lishimeng/event-bus/internal/channel"
+	"github.com/lishimeng/event-bus/internal/db"
+	"github.com/lishimeng/event-bus/internal/domains/sysCfg"
+	"github.com/lishimeng/event-bus/internal/message"
+	"github.com/lishimeng/event-bus/internal/tls/cypher"
+	"github.com/lishimeng/event-bus/providers/RocketMqProvider"
 	"github.com/lishimeng/go-log"
 	"github.com/lishimeng/x/container"
 )
@@ -27,16 +26,20 @@ func BeforeWeb(ctx context.Context) (err error) {
 
 	sysCfg.EnableCache()
 
-	err = initRmq(ctx) // 在channel加载之前
-
-	err = loadLocalSecret(ctx) // 加载本地密钥
-	if err != nil {
-		return
-	}
 	err = loadChannels(ctx) // 加载每个通道
 	if err != nil {
 		return
 	}
+
+	subscribeTopics := channel.GetManager().SubscribeTopics()
+	publishTopics := channel.GetManager().PublishTopics()
+
+	err = initRmq(ctx, publishTopics, subscribeTopics) // 在channel加载之前
+	if err != nil {
+		return
+	}
+	// rmq不需要显示调用subscribe
+	// TODO 切换mqtt时需要调度器
 	return
 }
 
@@ -48,18 +51,19 @@ func loadChannels(_ context.Context) (err error) {
 	if err != nil {
 		return
 	}
-	log.Info("load channels %d", len(list))
+	log.Info("load channels [%d]", len(list))
+	defer func() {
+		log.Info("load channels done")
+	}()
 	for _, item := range list {
+		log.Info("load channel %s[%s]:%s, tls:%d", item.Code, item.Name, item.Category.String(), item.UseSecurity)
 		var ch message.Channel
 		ch, err = channel.LoadChannel(item)
 		if err != nil {
 			log.Info("load channel fail, %s[%s]", item.Code, item.Name)
 			return
 		}
-		log.Info("load channel success, %s[%s]", item.Code, item.Name)
-		if ch.Category == db.Subscribe { // 需要执行subscribe
-			proc.EngineInstance.Subscribe(ch)
-		}
+		log.Info("load channel success, %s[%s]", ch.Code, ch.Name)
 	}
 	return
 }
@@ -96,22 +100,17 @@ func loadLocalSecret(_ context.Context) (err error) {
 	return
 }
 
-func initRmq(ctx context.Context) (err error) {
+func initRmq(ctx context.Context, publishTopics []string, subscribeTopics []string) (err error) {
+	// rmq需要在启动时做subscribe操作,不支持动态订阅. publish也需要预先汇总全部出口topic, 实际的subscribe接口不生效
 	log.Info("setup rmq")
 	var cfg RocketMqProvider.RmqConfig
 	err = sysCfg.GetSysConfig(db.SysRmqConfig, &cfg)
 	if err != nil {
 		return
 	}
-	client := proxy.New(ctx,
-		proxy.WithEndpoint(cfg.Endpoint),
-		proxy.WithAuth(cfg.AppId, cfg.Secret),
-		proxy.WithPublisherConfigs(cfg.Publisher.MessageGroup, cfg.Publisher.Topics...),
-	)
-	container.Add(&client)
 
 	log.Info("setup rmq provider")
-	rmqProvider := RocketMqProvider.New(client, cfg)
+	rmqProvider := RocketMqProvider.New(ctx, cfg, publishTopics, subscribeTopics)
 	container.Add(&rmqProvider)
 	engine := proc.NewEngine(rmqProvider)
 	rmqProvider.SetMessageListener(engine.OnMessage)

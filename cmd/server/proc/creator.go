@@ -1,9 +1,11 @@
 package proc
 
 import (
-	"gitee.com/lishimeng/event-bus/internal/channel"
-	"gitee.com/lishimeng/event-bus/internal/id"
-	"gitee.com/lishimeng/event-bus/internal/message"
+	"github.com/lishimeng/event-bus/internal/channel"
+	"github.com/lishimeng/event-bus/internal/db"
+	"github.com/lishimeng/event-bus/internal/id"
+	"github.com/lishimeng/event-bus/internal/message"
+	"github.com/lishimeng/event-bus/sdk"
 	"github.com/lishimeng/go-log"
 )
 
@@ -26,7 +28,7 @@ var WithParentId = func(id string) MessageCreateFunc {
 	}
 }
 
-func Create(destination string, biz message.BizMessage, opts ...MessageCreateFunc) (m message.Message, err error) {
+func Create(destination string, biz sdk.BizMessage, opts ...MessageCreateFunc) (m message.Message, err error) {
 	// 消息创建业务
 	var opt MessageCreateOpt
 	for _, o := range opts {
@@ -40,9 +42,9 @@ func Create(destination string, biz message.BizMessage, opts ...MessageCreateFun
 	}
 
 	// get destination
-	ch, err := channel.GetSubscriber(destination)
+	ch, err := channel.GetManager().GetCh(destination, db.PublishTo) // 发送到目的地(从发送channel列表中查找路由)
 	if err != nil {
-		log.Info("not found channel[%s]", destination)
+		log.Info("not found channel:%s[%s]", destination, db.PublishTo.String())
 		return
 	}
 

@@ -4,9 +4,9 @@ import (
 	"crypto/rsa"
 	"fmt"
 
-	"gitee.com/lishimeng/event-bus/internal/db"
-	"gitee.com/lishimeng/event-bus/internal/tls/cypher"
-	"gitee.com/lishimeng/event-bus/internal/tls/session"
+	"github.com/lishimeng/event-bus/internal/db"
+	"github.com/lishimeng/event-bus/internal/tls/cypher"
+	"github.com/lishimeng/event-bus/internal/tls/session"
 )
 
 type Channel struct {
