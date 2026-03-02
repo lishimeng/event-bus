@@ -13,8 +13,8 @@ type BizCallback struct {
 // BizMessage 业务消息体
 type BizMessage struct {
 	BizCallback
-	Action  string            `json:"action,omitempty"`
+	Action  string            `json:"apiPath,omitempty"`
 	Method  string            `json:"method,omitempty"`
 	Headers map[string]string `json:"headers,omitempty"`
-	Data    map[string]any    `json:"data,omitempty"`
+	Data    map[string]any    `json:"params,omitempty"`
 }
