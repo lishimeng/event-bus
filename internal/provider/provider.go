@@ -27,7 +27,7 @@ func (b *BaseProvider) AddDecodeHandler(handler MessageHandler) {
 	b.decodeHandlers = append(b.decodeHandlers, handler)
 }
 func (b *BaseProvider) AddEncodeHandler(handler MessageHandler) {
-	b.encodeHandlers = append(b.decodeHandlers, handler)
+	b.encodeHandlers = append(b.encodeHandlers, handler)
 }
 
 func (b *BaseProvider) PrePublish(m *message.Message) (err error) {
