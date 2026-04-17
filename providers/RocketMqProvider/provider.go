@@ -46,8 +46,8 @@ func (p *RocketMqProvider) createProxy() {
 	client := proxy.New(p.ctx,
 		proxy.WithEndpoint(p.rmqConfig.Endpoint),
 		proxy.WithAuth(cfg.AppId, cfg.Secret),
-		proxy.WithPublisherConfigs(cfg.Publisher.MessageGroup, publishTopics...),
-		proxy.WithConsumerConfigs(cfg.Subscribers[0].ConsumerGroup, subscribeTopics...),
+		proxy.WithPublisherConfigs(cfg.PublisherMessageGroup(), publishTopics...),
+		proxy.WithConsumerConfigs(cfg.ConsumerGroup(), subscribeTopics...),
 		proxy.WithConsumerHandler(func(mv *rmq.MessageView) {
 			msgRecord.OnMessage(mv.GetMessageId(), mv.GetTopic(), string(mv.GetBody()))
 			var m message.Message // TODO

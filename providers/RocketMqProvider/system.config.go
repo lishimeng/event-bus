@@ -1,9 +1,6 @@
 package RocketMqProvider
 
-import (
-	"errors"
-	"fmt"
-)
+import "strings"
 
 type RocketPublisher struct {
 	MessageGroup string   `json:"messageGroup,omitempty"`
@@ -23,13 +20,31 @@ type RmqConfig struct {
 	Subscribers []RocketSubscriber `json:"subscribers,omitempty"`
 }
 
-func (rc *RmqConfig) GetSubscriber(topic string) (s RocketSubscriber, err error) {
+func (rc *RmqConfig) PublisherMessageGroup() string {
+	if strings.TrimSpace(rc.Publisher.MessageGroup) != "" {
+		return strings.TrimSpace(rc.Publisher.MessageGroup)
+	}
+	return "event-bus-publisher"
+}
+
+func (rc *RmqConfig) ConsumerGroup() string {
 	for _, sub := range rc.Subscribers {
-		if sub.Topic == topic {
-			s = sub
-			return
+		if strings.TrimSpace(sub.ConsumerGroup) != "" {
+			return strings.TrimSpace(sub.ConsumerGroup)
 		}
 	}
-	err = errors.New(fmt.Sprintf("subscriber %s not exists", topic))
-	return
+	return ""
+}
+
+func (rc *RmqConfig) GetSubscriber(topic string) (s RocketSubscriber, ok bool) {
+	topic = strings.TrimSpace(topic)
+	for _, sub := range rc.Subscribers {
+		if strings.TrimSpace(sub.Topic) == topic {
+			return sub, true
+		}
+	}
+	if len(rc.Subscribers) > 0 {
+		return rc.Subscribers[0], true
+	}
+	return RocketSubscriber{}, false
 }

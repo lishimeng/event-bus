@@ -11,6 +11,7 @@ import (
 	"github.com/lishimeng/event-bus/internal/db"
 	"github.com/lishimeng/event-bus/internal/domains/sysCfg"
 	"github.com/lishimeng/event-bus/internal/message"
+	"github.com/lishimeng/event-bus/internal/provider"
 	"github.com/lishimeng/event-bus/internal/tls/cypher"
 	"github.com/lishimeng/event-bus/providers/RocketMqProvider"
 	"github.com/lishimeng/go-log"
@@ -25,6 +26,13 @@ func AfterWeb(ctx context.Context) (err error) {
 func BeforeWeb(ctx context.Context) (err error) {
 
 	sysCfg.EnableCache()
+
+	err = loadLocalSecret(ctx)
+	if err != nil {
+		log.Info("load local_secret: %v", err)
+		return
+	}
+	provider.StartRecordPersistence(ctx)
 
 	err = loadChannels(ctx) // 加载每个通道
 	if err != nil {
@@ -58,10 +66,10 @@ func loadChannels(_ context.Context) (err error) {
 	for _, item := range list {
 		log.Info("load channel %s[%s]:%s, tls:%d", item.Code, item.Name, item.Category.String(), item.UseSecurity)
 		var ch message.Channel
-		ch, err = channel.LoadChannel(item)
-		if err != nil {
-			log.Info("load channel fail, %s[%s]", item.Code, item.Name)
-			return
+		ch, loadErr := channel.LoadChannel(item)
+		if loadErr != nil {
+			log.Info("load channel skip, %s[%s]: %v", item.Code, item.Name, loadErr)
+			continue
 		}
 		log.Info("load channel success, %s[%s]", ch.Code, ch.Name)
 	}
@@ -89,14 +97,20 @@ func loadLocalSecret(_ context.Context) (err error) {
 	var localSecret db.LocalSecurity
 	err = json.Unmarshal(bs, &localSecret)
 	if err != nil {
-		return
+		log.Info("local_secret json: %v", err)
+		return nil
 	}
-	proc.LocalCipher.RsaPriKey, err = cypher.LoadPrivateKey([]byte(localSecret.RsaKey))
+	pemBytes, err := base64.StdEncoding.DecodeString(localSecret.RsaKey)
 	if err != nil {
-		return
-	} // 本地只需要私钥即可(加密操作)
+		log.Info("local_secret rsaKey base64: %v", err)
+		return nil
+	}
+	proc.LocalCipher.RsaPriKey, err = cypher.LoadPrivateKey(pemBytes)
+	if err != nil {
+		log.Info("local_secret parse pem: %v", err)
+		return nil
+	}
 	proc.UserLocalCipher = true
-
 	return
 }
 
@@ -106,6 +120,7 @@ func initRmq(ctx context.Context, publishTopics []string, subscribeTopics []stri
 	var cfg RocketMqProvider.RmqConfig
 	err = sysCfg.GetSysConfig(db.SysRmqConfig, &cfg)
 	if err != nil {
+		// 无 rmq_config 时直接返回，由前端/API 负责提醒配置缺失。
 		return
 	}
 
