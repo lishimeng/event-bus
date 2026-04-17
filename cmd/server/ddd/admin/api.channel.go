@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -17,6 +16,7 @@ import (
 )
 
 type ChannelReq struct {
+	Code       string           `json:"code,omitempty"`
 	Name       string           `json:"name,omitempty"`
 	Route      string           `json:"route,omitempty"`
 	Category   db.RouteCategory `json:"category,omitempty"`
@@ -60,45 +60,124 @@ func apiChannelConfig(ctx server.Context) {
 	}
 
 	var ch db.ChannelConfig
-
-	ch, err = svsGetChannel(req.Route)
-	if err != nil {
-		resp.Code = http.StatusBadRequest
-		resp.Message = err.Error()
-		ctx.Json(resp)
-		return
+	isNew := req.Code == ""
+	if isNew {
+		var list []db.ChannelConfig
+		_, err = app.GetOrm().Context.QueryTable(new(db.ChannelConfig)).
+			Filter("router", req.Route).
+			Filter("category", req.Category).
+			All(&list)
+		if err != nil {
+			resp.Code = http.StatusInternalServerError
+			resp.Message = err.Error()
+			ctx.Json(resp)
+			return
+		}
+		if len(list) > 0 {
+			resp.Code = http.StatusBadRequest
+			resp.Message = "channel already exists"
+			ctx.Json(resp)
+			return
+		}
+		ch.Code = genId()
+		ch.Router = req.Route
+	} else {
+		var list []db.ChannelConfig
+		_, err = app.GetOrm().Context.QueryTable(new(db.ChannelConfig)).
+			Filter("code", req.Code).
+			Filter("router", req.Route).
+			All(&list)
+		if err != nil {
+			resp.Code = http.StatusInternalServerError
+			resp.Message = err.Error()
+			ctx.Json(resp)
+			return
+		}
+		if len(list) == 0 {
+			resp.Code = http.StatusBadRequest
+			resp.Message = "channel not found"
+			ctx.Json(resp)
+			return
+		}
+		ch = list[0]
 	}
-	ch.Code = genId()
 	ch.Name = req.Name
 	ch.Callback = req.Callback
 	ch.Category = req.Category
-	ch.Router = req.Route
 
-	var bs []byte
-	var secret db.ChannelSecurity
-	if len(req.PrivateKey) > 0 {
-		bs, err = base64.StdEncoding.DecodeString(req.PrivateKey)
+	touchSecurity := len(req.PrivateKey) > 0 || len(req.PublicKey) > 0
+	if touchSecurity {
+		ch.UseSecurity = 1
+		var secret db.ChannelSecurity
+		var raw []byte
+		if len(req.PrivateKey) > 0 {
+			raw, err = base64.StdEncoding.DecodeString(stripBase64Noise(req.PrivateKey))
+			if err != nil {
+				resp.Code = http.StatusBadRequest
+				resp.Message = err.Error()
+				ctx.Json(resp)
+				return
+			}
+			var pemBytes []byte
+			pemBytes, err = normalizePrivateKeyToPEM(raw)
+			if err != nil {
+				resp.Code = http.StatusBadRequest
+				resp.Message = err.Error()
+				ctx.Json(resp)
+				return
+			}
+			secret.RsaKey = string(pemBytes)
+		}
+		if len(req.PublicKey) > 0 {
+			raw, err = base64.StdEncoding.DecodeString(stripBase64Noise(req.PublicKey))
+			if err != nil {
+				resp.Code = http.StatusBadRequest
+				resp.Message = err.Error()
+				ctx.Json(resp)
+				return
+			}
+			var pemBytes []byte
+			pemBytes, err = normalizePublicKeyToPEM(raw)
+			if err != nil {
+				resp.Code = http.StatusBadRequest
+				resp.Message = err.Error()
+				ctx.Json(resp)
+				return
+			}
+			secret.RsaPem = string(pemBytes)
+		}
+		var secJSON []byte
+		secJSON, err = json.Marshal(secret)
 		if err != nil {
-			resp.Code = http.StatusBadRequest
+			resp.Code = http.StatusInternalServerError
 			resp.Message = err.Error()
 			ctx.Json(resp)
 			return
 		}
-		secret.RsaKey = string(bs)
-	}
-	if len(req.PublicKey) > 0 {
-		bs, err = base64.StdEncoding.DecodeString(req.PublicKey)
+		ch.Security = base64.StdEncoding.EncodeToString(secJSON)
+	} else if isNew {
+		var secJSON []byte
+		secJSON, err = json.Marshal(struct{}{})
 		if err != nil {
-			resp.Code = http.StatusBadRequest
+			resp.Code = http.StatusInternalServerError
 			resp.Message = err.Error()
 			ctx.Json(resp)
 			return
 		}
-		secret.RsaPem = string(bs)
+		ch.Security = base64.StdEncoding.EncodeToString(secJSON)
+		ch.UseSecurity = 0
 	}
-	bs, err = json.Marshal(secret)
-	ch.Security = base64.StdEncoding.EncodeToString(bs)
-	_, err = app.GetOrm().Context.Insert(&ch)
+
+	if isNew {
+		_, err = app.GetOrm().Context.Insert(&ch)
+	} else {
+		if touchSecurity {
+			_, err = app.GetOrm().Context.Update(&ch,
+				"name", "callback", "category", "use_security", "security")
+		} else {
+			_, err = app.GetOrm().Context.Update(&ch, "name", "callback", "category")
+		}
+	}
 	if err != nil {
 		resp.Code = http.StatusInternalServerError
 		resp.Message = err.Error()
@@ -108,22 +187,6 @@ func apiChannelConfig(ctx server.Context) {
 	resp.Code = http.StatusOK
 	resp.Data = ch
 	ctx.Json(resp)
-}
-
-func svsGetChannel(router string) (ch db.ChannelConfig, err error) {
-	var list []db.ChannelConfig
-	_, err = app.GetOrm().Context.
-		QueryTable(new(db.ChannelConfig)).
-		Filter("router", router).All(&list)
-	if err != nil {
-		return
-	}
-	if len(list) == 0 {
-		err = errors.New("no channel config")
-		return
-	}
-	ch = list[0]
-	return
 }
 
 func genId() string {

@@ -36,6 +36,4 @@ vendor
 *.inner_test.go
 
 node_modules/
-
-*.exe
-bin
+dist/

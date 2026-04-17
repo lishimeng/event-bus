@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/lishimeng/app-starter"
 	"github.com/lishimeng/app-starter/persistence"
 	"github.com/lishimeng/event-bus/cmd/server/ddd"
+	"github.com/lishimeng/event-bus/cmd/server/ddd/static"
 	"github.com/lishimeng/event-bus/internal/etc"
 	"github.com/lishimeng/go-log"
 )
@@ -61,7 +63,10 @@ func _main() (err error) {
 			EnableDatabase(dbConfig.Build(), ddd.Tables()...).
 			ComponentBefore(ddd.BeforeWeb).
 			EnableWeb(etc.Config.Web.Listen, ddd.Router).
-			PrintVersion()
+			PrintVersion().
+			EnableStaticWeb(func() http.FileSystem {
+				return http.FS(static.Static)
+			})
 		if dbLogEnabled == "1" {
 			builder.EnableDatabaseLog()
 		}
