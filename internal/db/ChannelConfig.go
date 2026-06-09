@@ -10,13 +10,13 @@ import (
 // ChannelConfig 通道配置,
 type ChannelConfig struct {
 	app.Pk
-	Code        string        `orm:"column(code);unique"`
-	Name        string        `orm:"column(name)"`
-	Category    RouteCategory `orm:"column(category)"` // 路由方向
-	Router      string        `orm:"column(router)"`   // 路由路径
-	UseSecurity int           `orm:"column(use_security)"`
-	Security    string        `orm:"column(security)"` // 公钥
-	Callback    string        `orm:"column(callback)"` // 回调配置
+	Code        string        `gorm:"column:code;uniqueIndex"`
+	Name        string        `gorm:"column:name"`
+	Category    RouteCategory `gorm:"column:category"` // 路由方向
+	Router      string        `gorm:"column:router"`   // 路由路径
+	UseSecurity int           `gorm:"column:use_security"`
+	Security    string        `gorm:"column:security"` // 公钥
+	Callback    string        `gorm:"column:callback"` // 回调配置
 	app.TableChangeInfo
 }
 

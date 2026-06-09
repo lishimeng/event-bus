@@ -22,8 +22,8 @@ type rmqConfigGetResp struct {
 func apiGetRmqConfig(ctx server.Context) {
 	var resp app.ResponseWrapper
 	var list []db.SysConfig
-	_, err := app.GetOrm().Context.QueryTable(new(db.SysConfig)).
-		Filter("name", db.SysRmqConfig).All(&list)
+	err := app.GetOrm().Model(new(db.SysConfig)).
+		Equal("name", db.SysRmqConfig).Find(&list)
 	if err != nil {
 		log.Info(err)
 		resp.Code = http.StatusInternalServerError
@@ -100,10 +100,10 @@ func apiSaveRmqConfig(ctx server.Context) {
 }
 
 func saveSysConfigNamed(name string, configB64 string) (err error) {
-	err = app.GetOrm().Transaction(func(tx persistence.TxContext) (e error) {
+	err = app.Transaction(func(tx persistence.TxContext) (e error) {
 		var tmpList []db.SysConfig
-		_, e = tx.Context.QueryTable(new(db.SysConfig)).
-			Filter("name", name).All(&tmpList)
+		e = tx.Model(new(db.SysConfig)).
+			Equal("name", name).Find(&tmpList)
 		if e != nil {
 			return
 		}
@@ -112,11 +112,11 @@ func saveSysConfigNamed(name string, configB64 string) (err error) {
 			item.Name = name
 			item.Config = configB64
 			item.Status = 1
-			_, e = tx.Context.Insert(&item)
+			e = tx.Create(&item)
 		} else {
 			item := tmpList[0]
 			item.Config = configB64
-			_, e = tx.Context.Update(&item, "config")
+			e = tx.Model(&item).Select("Config").Updates(&item)
 		}
 		return
 	})

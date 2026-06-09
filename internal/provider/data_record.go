@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/lishimeng/app-starter"
+	app "github.com/lishimeng/app-starter"
+	"github.com/lishimeng/app-starter/persistence"
 	"github.com/lishimeng/event-bus/internal/db"
 	"github.com/lishimeng/event-bus/internal/id"
 	"github.com/lishimeng/event-bus/internal/message"
@@ -99,7 +100,9 @@ func insertDataRecord(dir db.RouteCategory, msg *message.Message) {
 		BizPayload: string(biz),
 	}
 	rec.Status = 1
-	_, err = app.GetOrm().Context.Insert(&rec)
+	err = app.Transaction(func(tx persistence.TxContext) error {
+		return tx.Create(&rec)
+	})
 	if err != nil {
 		log.Info("data_record insert fail: %v", err)
 		return

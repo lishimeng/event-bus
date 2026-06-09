@@ -9,13 +9,13 @@ const (
 
 type SysConfig struct {
 	app.Pk
-	Name   string `orm:"column(name)"`   // 配置名称
-	Config string `orm:"column(config)"` // base64格式配置内容
+	Name   string `gorm:"column:name"`   // 配置名称
+	Config string `gorm:"column:config"` // base64格式配置内容
 	app.TableChangeInfo
 }
 
 // LocalSecurity 本地密钥
 type LocalSecurity struct {
-	RsaKey string `orm:"column(rsa_key)"` // pem格式
-	RsaPem string `orm:"column(rsa_pem)"` // pem格式
+	RsaKey string `json:"rsaKey,omitempty"`
+	RsaPem string `json:"rsaPem,omitempty"`
 }

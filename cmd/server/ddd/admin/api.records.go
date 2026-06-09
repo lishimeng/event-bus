@@ -64,9 +64,9 @@ func apiListDataRecords(ctx server.Context) {
 			offset = n
 		}
 	}
-	qs := app.GetOrm().Context.QueryTable(new(db.DataRecord))
+	qs := app.GetOrm().Model(new(db.DataRecord))
 	if src := ctx.C.URLParam("source"); src != "" {
-		qs = qs.Filter("source", src)
+		qs = qs.Equal("source", src)
 	}
 	total, err := qs.Count()
 	if err != nil {
@@ -77,7 +77,7 @@ func apiListDataRecords(ctx server.Context) {
 		return
 	}
 	var list []db.DataRecord
-	_, err = qs.OrderBy("-id").Limit(limit).Offset(offset).All(&list)
+	err = qs.Order("id desc").Limit(int(limit)).Offset(int(offset)).Find(&list)
 	if err != nil {
 		log.Info(err)
 		resp.Code = http.StatusInternalServerError

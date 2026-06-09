@@ -29,7 +29,7 @@ type ChannelSummary struct {
 func apiListChannels(ctx server.Context) {
 	var resp app.ResponseWrapper
 	var list []db.ChannelConfig
-	_, err := app.GetOrm().Context.QueryTable(new(db.ChannelConfig)).OrderBy("id").All(&list)
+	err := app.GetOrm().Model(new(db.ChannelConfig)).Order("id").Find(&list)
 	if err != nil {
 		log.Info(err)
 		resp.Code = http.StatusInternalServerError

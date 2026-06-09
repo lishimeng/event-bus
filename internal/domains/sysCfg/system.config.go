@@ -55,7 +55,7 @@ func getCacheSysConfig(name string) (conf db.SysConfig, exist bool) {
 func loadSysConfigs() (configs map[string]db.SysConfig, err error) {
 	configs = map[string]db.SysConfig{}
 	var list []db.SysConfig
-	_, err = app.GetOrm().Context.QueryTable(new(db.SysConfig)).All(&list)
+	err = app.GetOrm().Model(new(db.SysConfig)).Find(&list)
 	if err != nil {
 		return
 	}

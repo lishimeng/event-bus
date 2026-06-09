@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/lishimeng/app-starter"
+	"github.com/lishimeng/app-starter/persistence"
 	"github.com/lishimeng/app-starter/server"
 	"github.com/lishimeng/event-bus/internal/db"
 	"github.com/lishimeng/go-log"
@@ -63,10 +64,10 @@ func apiChannelConfig(ctx server.Context) {
 	isNew := req.Code == ""
 	if isNew {
 		var list []db.ChannelConfig
-		_, err = app.GetOrm().Context.QueryTable(new(db.ChannelConfig)).
-			Filter("router", req.Route).
-			Filter("category", req.Category).
-			All(&list)
+		err = app.GetOrm().Model(new(db.ChannelConfig)).
+			Equal("router", req.Route).
+			Equal("category", req.Category).
+			Find(&list)
 		if err != nil {
 			resp.Code = http.StatusInternalServerError
 			resp.Message = err.Error()
@@ -83,10 +84,10 @@ func apiChannelConfig(ctx server.Context) {
 		ch.Router = req.Route
 	} else {
 		var list []db.ChannelConfig
-		_, err = app.GetOrm().Context.QueryTable(new(db.ChannelConfig)).
-			Filter("code", req.Code).
-			Filter("router", req.Route).
-			All(&list)
+		err = app.GetOrm().Model(new(db.ChannelConfig)).
+			Equal("code", req.Code).
+			Equal("router", req.Route).
+			Find(&list)
 		if err != nil {
 			resp.Code = http.StatusInternalServerError
 			resp.Message = err.Error()
@@ -169,13 +170,18 @@ func apiChannelConfig(ctx server.Context) {
 	}
 
 	if isNew {
-		_, err = app.GetOrm().Context.Insert(&ch)
+		err = app.Transaction(func(tx persistence.TxContext) error {
+			return tx.Create(&ch)
+		})
 	} else {
 		if touchSecurity {
-			_, err = app.GetOrm().Context.Update(&ch,
-				"name", "callback", "category", "use_security", "security")
+			err = app.GetOrm().Model(&ch).
+				Select("Name", "Callback", "Category", "UseSecurity", "Security").
+				Updates(&ch)
 		} else {
-			_, err = app.GetOrm().Context.Update(&ch, "name", "callback", "category")
+			err = app.GetOrm().Model(&ch).
+				Select("Name", "Callback", "Category").
+				Updates(&ch)
 		}
 	}
 	if err != nil {

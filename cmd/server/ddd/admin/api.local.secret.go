@@ -29,8 +29,8 @@ type localSecretStatus struct {
 func apiGetLocalSecret(ctx server.Context) {
 	var resp app.ResponseWrapper
 	var list []db.SysConfig
-	_, err := app.GetOrm().Context.QueryTable(new(db.SysConfig)).
-		Filter("name", db.SysLocalSecret).All(&list)
+	err := app.GetOrm().Model(new(db.SysConfig)).
+		Equal("name", db.SysLocalSecret).Find(&list)
 	if err != nil {
 		log.Info(err)
 		resp.Code = http.StatusInternalServerError
@@ -118,24 +118,23 @@ func apiConfigLocalSecret(ctx server.Context) {
 }
 
 func _saveLocalSecret(config string) (err error) {
-	err = app.GetOrm().Transaction(func(tx persistence.TxContext) (e error) {
-		// 检查数据库在是否存在
+	err = app.Transaction(func(tx persistence.TxContext) (e error) {
 		var tmpList []db.SysConfig
-		_, e = tx.Context.QueryTable(new(db.SysConfig)).
-			Filter("name", db.SysLocalSecret).All(&tmpList)
+		e = tx.Model(new(db.SysConfig)).
+			Equal("name", db.SysLocalSecret).Find(&tmpList)
 		if e != nil {
 			return
 		}
-		if len(tmpList) == 0 { // insert
+		if len(tmpList) == 0 {
 			var item db.SysConfig
 			item.Name = db.SysLocalSecret
 			item.Config = config
 			item.Status = 1
-			_, e = tx.Context.Insert(&item)
-		} else { // update
-			var item = tmpList[0]
+			e = tx.Create(&item)
+		} else {
+			item := tmpList[0]
 			item.Config = config
-			_, e = tx.Context.Update(&item, "config")
+			e = tx.Model(&item).Select("Config").Updates(&item)
 		}
 		return
 	})

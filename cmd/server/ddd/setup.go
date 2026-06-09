@@ -55,7 +55,7 @@ func BeforeWeb(ctx context.Context) (err error) {
 func loadChannels(_ context.Context) (err error) {
 
 	var list []db.ChannelConfig
-	_, err = app.GetOrm().Context.QueryTable(new(db.ChannelConfig)).All(&list)
+	err = app.GetOrm().Model(new(db.ChannelConfig)).Find(&list)
 	if err != nil {
 		return
 	}
@@ -78,9 +78,8 @@ func loadChannels(_ context.Context) (err error) {
 
 func loadLocalSecret(_ context.Context) (err error) {
 	var list []db.SysConfig
-	_, err = app.GetOrm().Context.
-		QueryTable(new(db.SysConfig)).
-		Filter("name", db.SysLocalSecret).All(&list)
+	err = app.GetOrm().Model(new(db.SysConfig)).
+		Equal("name", db.SysLocalSecret).Find(&list)
 	if err != nil {
 		return
 	}

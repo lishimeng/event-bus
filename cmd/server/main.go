@@ -9,14 +9,12 @@ import (
 	"time"
 
 	"github.com/lishimeng/app-starter"
-	"github.com/lishimeng/app-starter/persistence"
+	"github.com/lishimeng/app-starter/persistence/driver/postgres"
 	"github.com/lishimeng/event-bus/cmd/server/ddd"
 	"github.com/lishimeng/event-bus/cmd/server/ddd/static"
 	"github.com/lishimeng/event-bus/internal/etc"
 	"github.com/lishimeng/go-log"
 )
-
-import _ "github.com/lib/pq"
 
 func main() {
 
@@ -44,7 +42,7 @@ func _main() (err error) {
 			return err
 		}
 
-		dbConfig := persistence.PostgresConfig{
+		dbConfig := postgres.Config{
 			UserName:  etc.Config.Db.User,
 			Password:  etc.Config.Db.Password,
 			Host:      etc.Config.Db.Host,
